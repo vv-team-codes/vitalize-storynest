@@ -368,3 +368,42 @@ details.anim-providers-card summary{cursor:pointer;font-weight:600;font-size:15p
   #page-animation #renderPreview canvas{max-width:100%}
   .back-btn{margin-bottom:8px}
 }
+
+/* ---- v16: user-supplied mobile-only optimisation (26 Nov), mapped to the
+   REAL site classes. Desktop (>768px) is untouched. The patch assumed a
+   generic landing page (.nav/.hero/.navlinks/.content/.subtitle/.features/
+   .feature/.cta/.btn); here those map to .topbar/.welcome-hero/#nav/
+   .hero-content/.hero-content p/.hero-cards/.hero-card/.hero-cta.
+   - No new hamburger button: #menuBtn already exists and toggleMenu()
+     already toggles #nav.open (go() already closes it on navigation), so
+     the patch's JS step is already implemented — only aria-expanded is
+     added (see app.js + index.html). The patch's button styling is applied
+     to the existing #menuBtn instead.
+   - The patch's dark navy header background is NOT applied: the brand
+     purple→blue→gold topbar (and the transparent topbar over the hero)
+     is the settled identity.
+   - Signed-out mobile: the nav was a cramped horizontal scroll row; it
+     is now the patch's hamburger dropdown. Signed-in is unchanged
+     (#nav stays hidden; sections live in More + bottom nav). */
+@media screen and (max-width:768px){
+  html,body{width:100%;max-width:100%;overflow-x:hidden}
+  /* Compact top header */
+  .topbar{height:auto;padding:14px 18px;flex-wrap:nowrap;gap:10px;z-index:20}
+  .brand{min-width:0;width:auto;margin:0 auto 0 0;gap:8px;flex:1 1 auto}
+  /* Keep Get Started visible in the header row (no wrap to a second row) */
+  .top-right{display:flex;flex:0 0 auto;order:0;width:auto;margin-left:auto;align-items:center;gap:8px;flex-wrap:nowrap}
+  .top-right .btn{padding:11px 14px;min-height:44px;font-size:13px;white-space:nowrap}
+  /* Hamburger — the existing #menuBtn, restyled as the patch's 44px circle */
+  .menu-btn{width:44px;height:44px;flex:0 0 44px;padding:0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid rgba(255,255,255,.65);border-radius:50%;background:rgba(10,24,65,.55);font-size:20px}
+  /* Navigation becomes a dropdown instead of a cramped horizontal row */
+  body:not(.signed-in) .menu-btn{display:flex}
+  body:not(.signed-in) #nav{display:none}
+  body:not(.signed-in) #nav.open{display:flex;position:absolute;top:76px;left:14px;right:14px;width:auto;max-height:calc(100svh - 110px);overflow-y:auto;padding:12px;flex-direction:column;align-items:stretch;gap:7px;border:1px solid rgba(255,255,255,.22);border-radius:18px;background:rgba(9,22,59,.96);backdrop-filter:blur(18px);box-shadow:0 16px 38px rgba(0,0,0,.32);z-index:30}
+  body:not(.signed-in) #nav.open button{display:block;width:100%;padding:13px 15px;border:none;border-bottom:none;border-radius:12px;font-size:15px;text-align:left;white-space:normal}
+  #moreMenu{top:76px}
+}
+/* Small phones */
+@media screen and (max-width:380px){
+  .topbar{padding-left:12px;padding-right:12px}
+  .top-right .btn{padding:10px 11px;font-size:12px}
+}

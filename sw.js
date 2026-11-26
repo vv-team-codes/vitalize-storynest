@@ -1,10 +1,11 @@
-/* ekiddy.com service worker — offline app shell (v15).
+/* ekiddy.com service worker — offline app shell (v16).
    v11: same network-first worker as v8, cache name + asset versions
    bumped so a stale v9 shell can never be served again.
    v13: cache name + asset versions bumped to v14.
-   v15: new horizontal logo (logo.css added to precache) + versions bumped to v15. */
-const CACHE = 'vsn-shell-v15';
-const ASSETS = ['./', './index.html', './styles.css?v=15', './hero.css?v=15', './hero-bg.css?v=15', './logo.css?v=15', './app.js?v=15', './auth.js?v=15', './manifest.json', './icon.svg'];
+   v15: new horizontal logo (logo.css added to precache) + versions bumped to v15.
+   v16: mobile-only optimisation (styles.css + hero.css + app.js) + versions bumped to v16. */
+const CACHE = 'vsn-shell-v16';
+const ASSETS = ['./', './index.html', './styles.css?v=16', './hero.css?v=16', './hero-bg.css?v=15', './logo.css?v=15', './app.js?v=16', './auth.js?v=15', './manifest.json', './icon.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });

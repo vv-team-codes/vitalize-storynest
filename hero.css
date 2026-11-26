@@ -91,3 +91,37 @@
   .hero-glow{left:28%;top:62%}
   .hero-lantern{left:24%;top:22%}
 }
+
+/* ---- v16: user-supplied mobile-only optimisation (26 Nov), mapped to the
+   real hero classes (.hero→.welcome-hero, .content→.hero-content,
+   .subtitle→.hero-content p, .features→.hero-cards, .feature→.hero-card).
+   Desktop untouched; appended last so it wins over the older 900/520/430px
+   hero rules where they overlap. Two deliberate skips: the patch's
+   100svh hero min-height is NOT applied (the existing 940px/860px
+   min-heights are the correct fit for this hero's content — 100svh would
+   crop it, the hero has overflow:hidden), and .hero-content keeps its
+   520px readability panel (padding is NOT zeroed). */
+@media screen and (max-width:768px){
+  /* Full-screen cinematic background */
+  .welcome-hero{width:100%;background-size:cover;background-position:42% center;background-repeat:no-repeat;overflow:hidden;display:flex;flex-direction:column}
+  /* Hero text: centered, readable, and not overlapping the header */
+  .hero-content{width:min(100% - 34px,560px);margin:clamp(28px,7vh,58px) auto 0;text-align:center;z-index:2}
+  .hero-content h1{margin:0 0 18px;font-size:clamp(37px,10vw,54px);line-height:1.04;letter-spacing:-1.5px;overflow-wrap:anywhere}
+  .scribble{display:none}
+  .hero-content p{width:100%;max-width:430px;margin:0 auto 24px;font-size:clamp(15px,4.2vw,19px);line-height:1.5}
+  /* Large, easy-to-tap calls to action */
+  .hero-cta{width:100%;min-height:58px;margin:0 auto 12px;padding:15px 18px;display:flex;justify-content:center;align-items:center;border-radius:999px;font-size:clamp(16px,4.5vw,19px);line-height:1.2;text-align:center}
+  .hero-cta + .hero-cta{margin-left:0;margin-top:12px}
+  /* Feature tiles sit in a compact 2-column grid near the bottom */
+  .hero-cards{position:relative;left:auto;bottom:auto;transform:none;width:calc(100% - 28px);margin:auto auto 18px;padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border:1px solid rgba(255,255,255,.25);border-radius:24px;background:rgba(19,35,70,.48);backdrop-filter:blur(16px);z-index:3}
+  .hero-card{min-width:0;min-height:112px;padding:12px 7px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .hero-card strong{font-size:14px;line-height:1.2}
+  .hero-card span:last-child{max-width:100%;margin-top:4px;font-size:11px;line-height:1.25}
+}
+/* Small phones */
+@media screen and (max-width:380px){
+  .hero-content{width:calc(100% - 26px);margin-top:24px}
+  .hero-content h1{font-size:clamp(34px,9.6vw,42px)}
+  .hero-cards{width:calc(100% - 20px);gap:7px;padding:8px}
+  .hero-card{min-height:102px}
+}
