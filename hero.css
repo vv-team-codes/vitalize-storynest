@@ -125,3 +125,11 @@
   .hero-cards{width:calc(100% - 20px);gap:7px;padding:8px}
   .hero-card{min-height:102px}
 }
+
+/* ---- v17: signed-out welcome hero fits the viewport — no scroller.
+   The 940px (<=520px) / 860px (<=430px) fixed min-heights were sized for
+   the signed-in hero WITH its 4 cards; signed-out the cards are hidden,
+   so the hero was taller than the phone and the page scrolled. Signed-out
+   the hero is now exactly viewport-height (100svh so the mobile browser
+   chrome is accounted for). Signed-in keeps the tall hero. */
+body:not(.signed-in) .welcome-hero{min-height:100vh;min-height:100svh}

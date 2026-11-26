@@ -387,12 +387,14 @@ details.anim-providers-card summary{cursor:pointer;font-weight:600;font-size:15p
      (#nav stays hidden; sections live in More + bottom nav). */
 @media screen and (max-width:768px){
   html,body{width:100%;max-width:100%;overflow-x:hidden}
-  /* Compact top header */
-  .topbar{height:auto;padding:14px 18px;flex-wrap:nowrap;gap:10px;z-index:20}
-  .brand{min-width:0;width:auto;margin:0 auto 0 0;gap:8px;flex:1 1 auto}
+  /* Compact top header — signed-out only. Signed-in mobile keeps the
+     pre-v16 wrapping header (user chip + More need the second row); the
+     v16 one-row header forced them into one row and overflowed. */
+  body:not(.signed-in) .topbar{height:auto;padding:14px 18px;flex-wrap:nowrap;gap:10px;z-index:20}
+  body:not(.signed-in) .brand{min-width:0;width:auto;margin:0 auto 0 0;gap:8px;flex:1 1 auto}
   /* Keep Get Started visible in the header row (no wrap to a second row) */
-  .top-right{display:flex;flex:0 0 auto;order:0;width:auto;margin-left:auto;align-items:center;gap:8px;flex-wrap:nowrap}
-  .top-right .btn{padding:11px 14px;min-height:44px;font-size:13px;white-space:nowrap}
+  body:not(.signed-in) .top-right{display:flex;flex:0 0 auto;order:0;width:auto;margin-left:auto;align-items:center;gap:8px;flex-wrap:nowrap}
+  body:not(.signed-in) .top-right .btn{padding:11px 14px;min-height:44px;font-size:13px;white-space:nowrap}
   /* Hamburger — the existing #menuBtn, restyled as the patch's 44px circle */
   .menu-btn{width:44px;height:44px;flex:0 0 44px;padding:0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid rgba(255,255,255,.65);border-radius:50%;background:rgba(10,24,65,.55);font-size:20px}
   /* Navigation becomes a dropdown instead of a cramped horizontal row */
@@ -400,10 +402,31 @@ details.anim-providers-card summary{cursor:pointer;font-weight:600;font-size:15p
   body:not(.signed-in) #nav{display:none}
   body:not(.signed-in) #nav.open{display:flex;position:absolute;top:76px;left:14px;right:14px;width:auto;max-height:calc(100svh - 110px);overflow-y:auto;padding:12px;flex-direction:column;align-items:stretch;gap:7px;border:1px solid rgba(255,255,255,.22);border-radius:18px;background:rgba(9,22,59,.96);backdrop-filter:blur(18px);box-shadow:0 16px 38px rgba(0,0,0,.32);z-index:30}
   body:not(.signed-in) #nav.open button{display:block;width:100%;padding:13px 15px;border:none;border-bottom:none;border-radius:12px;font-size:15px;text-align:left;white-space:normal}
-  #moreMenu{top:76px}
+  /* More menu sits directly below the header whatever its height is
+     (the old fixed 64px overlapped the second header row on mobile). */
+  #moreMenu{top:100%}
 }
 /* Small phones */
 @media screen and (max-width:380px){
   .topbar{padding-left:12px;padding-right:12px}
-  .top-right .btn{padding:10px 11px;font-size:12px}
+  body:not(.signed-in) .top-right .btn{padding:10px 11px;font-size:12px}
+}
+
+/* ---- v17: welcome page fits without scrolling + small-phone header fit ----
+   Overflow diagnosis (signed-out welcome): the hero was 100vh PLUS the
+   22px bottom padding on main (desktop: a 22px scroller), and on phones
+   the hero had FIXED 940px/860px min-heights (sized for the signed-in
+   hero WITH cards — signed-out the cards are hidden, so the hero was
+   taller than the phone). No hidden section adds height: #simpleHome,
+   .hero-cards, footer and #bottomnav are all display:none signed-out.
+   Fix, signed-out home only: hero is exactly viewport-height (see
+   hero.css), main loses its bottom padding, and the page cannot scroll
+   vertically. Signed-in pages are untouched and scroll normally.
+   Small phones: the one-row signed-out header (logo + Get Started +
+   burger) does not fit with Sign In too, so Sign In hides at <=430px —
+   Get Started still opens sign-in, so nothing is lost. */
+body:not(.signed-in).on-home{overflow-y:hidden}
+body:not(.signed-in).on-home main{padding-bottom:0}
+@media screen and (max-width:430px){
+  body:not(.signed-in) #topSignInBtn{display:none}
 }
