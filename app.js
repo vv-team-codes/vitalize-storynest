@@ -201,6 +201,10 @@ function renderAdmin(){const el=document.getElementById('adminStats');if(el)el.i
 /* ---------- Animation ---------- */
 const CAMERA='Camera: wide shot, slow push-in or gentle follow only. No jump cuts, no sudden zooms. If the location changes, add a 1-second fade/transition note.';
 const NEGATIVE='Negative: no extra characters, no extra limbs, no changed face/hair/outfit/colours, no mirrored text, no on-screen text, no teleporting.';
+/* v12: Animation Studio was missing the Random button the Picture Book
+   and Story flows have — one tap fills the idea field with a random
+   topic from the same IDEAS list. Default fallback topic unchanged. */
+function randomAnimationIdea(){document.getElementById('anIdea').value=IDEAS[Math.floor(Math.random()*IDEAS.length)];}
 function generateStoryboard(){
   const idea=document.getElementById('anIdea').value.trim()||'Milo the fox follows a glowing lantern';
   const n=Math.max(3,Math.min(8,parseInt(document.getElementById('anScenes').value)||4));

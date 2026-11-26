@@ -229,6 +229,10 @@
   <div class="card"><h3>Storyboard</h3>
     <textarea id="anIdea" rows="2" placeholder="e.g. Milo the fox follows a glowing lantern across the meadow"></textarea>
     <div class="row">
+      <button class="btn" onclick="randomAnimationIdea()">🎲 Random idea</button>
+      <span class="muted small">Tap for a surprise topic, or type your own.</span>
+    </div>
+    <div class="row">
       <label>Scenes <input type="number" id="anScenes" min="3" max="8" value="4" style="width:70px"></label>
       <label>Duration <select id="anDur"><option value="15">15s</option><option value="30">30s</option><option value="60" selected>1 min</option><option value="90">1.5 min</option><option value="120">2 min</option></select></label>
       <label>Ratio <select id="anRatio"><option value="9:16" selected>9:16 (Shorts / Reels)</option><option value="16:9">16:9 (YouTube)</option><option value="1:1">1:1 (Square)</option></select></label>
