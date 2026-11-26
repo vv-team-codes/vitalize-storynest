@@ -4,11 +4,12 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;bac
 body.dark{background:#12211f;color:#f5f3ff;--card:#1e1b4b;--border:#312e81;--muted:#c7c9e8}
 body.dark .card,body.dark input,body.dark select,body.dark textarea{background:#1e1b4b;color:#f5f3ff;border-color:#312e81}
 .topbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 22px;background:linear-gradient(90deg,#6d28d9,#2563eb 45%,#f59e0b);color:#fff;position:sticky;top:0;z-index:10;box-shadow:0 4px 18px rgba(109,40,217,.25)}
-.brand{display:flex;gap:10px;align-items:center}.logo{font-size:28px}
+.brand{display:flex;gap:10px;align-items:center;background:rgba(8,16,38,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:4px 10px}
+.brand .brand-logo{filter:drop-shadow(0 0 4px rgba(255,255,255,.85))}.logo{font-size:28px}
 .brand small{display:block;opacity:.9;font-size:12px}
 #nav{display:flex;gap:6px;flex-wrap:wrap;flex:1}
 #nav button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);color:#fff;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600}
-#nav button.active,#nav button:hover{background:#fff;color:#6d28d9}
+#nav button.active{background:#fff;color:#6d28d9;font-weight:700;box-shadow:0 0 0 2px rgba(109,40,217,.3)}
 .pill{background:#fff;color:#6d28d9;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
 .pill.soft{background:rgba(255,255,255,.22);color:#fff}
 main{max-width:1080px;margin:0 auto;padding:22px}
@@ -142,7 +143,15 @@ body.on-home main{padding-top:0}
    nav buttons (shown off-home) also get a darker pill + text shadow. */
 .landing-hero::before{content:"";position:absolute;left:0;right:0;top:0;height:12%;background:linear-gradient(rgba(8,20,32,.62),rgba(8,20,32,0));pointer-events:none;z-index:0}
 .landing-hero .hotspot{z-index:1}
-#nav button:not(.active){background:rgba(109,40,217,.45);text-shadow:0 1px 3px rgba(0,0,0,.55)}
+/* ---- v20: nav pills all white like Home + hover turns purple/blue.
+   The user asked every nav pill (Home / Picture Book / Animation /
+   Library / Pricing) to look like Home does now — white pill, purple
+   text — and on mouse hover the pill turns the purple-blue that used to
+   sit on the inactive pills, with white text. The active pill keeps a
+   purple ring + bold text so "you are here" still reads. The old v6
+   purple pill + text-shadow is gone (white pills need no shadow). */
+#nav button:not(.active){background:#fff;color:#6d28d9;border-color:rgba(109,40,217,.2);text-shadow:none}
+#nav button:hover{background:#6d28d9;color:#fff;border-color:#6d28d9}
 
 /* ---- v9: welcome-only while signed out; creation choices after sign-in ----
    Signed out, the visitor sees ONLY the welcome hero (top nav, headline,
@@ -391,7 +400,7 @@ details.anim-providers-card summary{cursor:pointer;font-weight:600;font-size:15p
      pre-v16 wrapping header (user chip + More need the second row); the
      v16 one-row header forced them into one row and overflowed. */
   body:not(.signed-in) .topbar{height:auto;padding:14px 18px;flex-wrap:nowrap;gap:10px;z-index:20}
-  body:not(.signed-in) .brand{min-width:0;width:auto;margin:0 auto 0 0;gap:8px;flex:1 1 auto}
+  body:not(.signed-in) .brand{min-width:0;width:auto;margin:0 auto 0 0;gap:8px;flex:0 0 auto}
   /* Keep Get Started visible in the header row (no wrap to a second row) */
   body:not(.signed-in) .top-right{display:flex;flex:0 0 auto;order:0;width:auto;margin-left:auto;align-items:center;gap:8px;flex-wrap:nowrap}
   body:not(.signed-in) .top-right .btn{padding:11px 14px;min-height:44px;font-size:13px;white-space:nowrap}
