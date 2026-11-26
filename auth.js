@@ -1,7 +1,9 @@
-/* Vitalize StoryNest — mandatory Google sign-in gate (Firebase Auth).
-   No guest access: the site stays locked until Firebase reports a signed-in user.
-   If Firebase cannot load or the config is wrong, the gate shows a setup error
-   and never pretends anyone is signed in. */
+/* Vitalize StoryNest — Google sign-in (Firebase Auth), v5.
+   REVISED trigger (26 Nov 2026): the landing page is fully visible on load —
+   no blocking gate. Google sign-in opens on ANY button/link tap while signed
+   out. After sign-in every button works normally, and the tap's destination
+   page opens. No guest use of the app itself: app pages only open after
+   sign-in. If Firebase cannot load, the sign-in modal shows the error. */
 (function () {
   var FIREBASE_CONFIG = {
     apiKey: "AIzaSyBsjgGNMjSpuwfd8FUt2gHSs8IdKs8N4ho",
@@ -14,10 +16,14 @@
   var currentUser = null;
   var auth = null;
   var signInBusy = false;
+  var pendingPage = null;
 
+  function gateEl() { return document.getElementById('authGate'); }
   function errEl() { return document.getElementById('authError'); }
   function btnEl() { return document.getElementById('googleSignInBtn'); }
 
+  function showGate() { var g = gateEl(); if (g) g.classList.add('show'); }
+  function hideGate() { var g = gateEl(); if (g) g.classList.remove('show'); }
   function showError(msg) {
     var el = errEl();
     if (el) { el.textContent = msg; el.style.display = 'block'; }
@@ -27,19 +33,23 @@
     if (el) { el.textContent = ''; el.style.display = 'none'; }
   }
   function setLocked(locked) {
-    document.body.classList.toggle('locked', locked);
+    /* v5: landing is never hidden. 'locked' only means "not signed in yet". */
     document.body.classList.toggle('signed-in', !locked);
+    document.body.classList.remove('locked');
   }
   function renderUser(user) {
     var chip = document.getElementById('userChip');
-    if (!chip) return;
-    if (!user) { chip.style.display = 'none'; return; }
-    var photo = document.getElementById('userPhoto');
-    var name = document.getElementById('userName');
-    if (photo) { photo.src = user.photoURL || 'icon.svg'; photo.alt = user.displayName || 'Signed in'; }
-    if (name) { name.textContent = user.displayName || user.email || 'Signed in'; }
-    chip.style.display = 'inline-flex';
-    chip.title = user.email || '';
+    if (chip) {
+      if (!user) { chip.style.display = 'none'; }
+      else {
+        var photo = document.getElementById('userPhoto');
+        var name = document.getElementById('userName');
+        if (photo) { photo.src = user.photoURL || 'icon.svg'; photo.alt = user.displayName || 'Signed in'; }
+        if (name) { name.textContent = user.displayName || user.email || 'Signed in'; }
+        chip.style.display = 'inline-flex';
+        chip.title = user.email || '';
+      }
+    }
   }
   function setBtnBusy(busy, label) {
     var b = btnEl();
@@ -64,7 +74,7 @@
 
   function startGoogleSignIn() {
     if (currentUser) return;
-    if (!auth) { showError('Google sign-in is not ready yet. Reload the page and try again.'); return; }
+    if (!auth) { showGate(); showError('Google sign-in is not ready yet. Reload the page and try again.'); return; }
     if (signInBusy) return;
     signInBusy = true;
     clearError();
@@ -72,8 +82,9 @@
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     auth.signInWithPopup(provider).then(function (result) {
-      if (!result || !result.user) showError('Sign-in did not return a Google account. Please try again.');
+      if (!result || !result.user) { showGate(); showError('Sign-in did not return a Google account. Please try again.'); }
     }).catch(function (e) {
+      showGate();
       showError(friendlyError(e));
     }).finally(function () {
       signInBusy = false;
@@ -83,19 +94,30 @@
 
   function signOutUser() {
     if (!auth) return;
-    auth.signOut().catch(function (e) { showError('Sign-out failed: ' + (e && e.message ? e.message : 'please try again.')); });
+    auth.signOut().catch(function (e) { showGate(); showError('Sign-out failed: ' + (e && e.message ? e.message : 'please try again.')); });
   }
+  function closeAuthGate() { hideGate(); clearError(); }
 
   window.startGoogleSignIn = startGoogleSignIn;
   window.signOutUser = signOutUser;
+  window.closeAuthGate = closeAuthGate;
   window.vsnAuth = { getUser: function () { return currentUser; }, signIn: startGoogleSignIn, signOut: signOutUser };
 
-  /* Any tap/click anywhere before sign-in opens the Google sign-in flow.
-     Capture phase, so nav buttons, cards and links never reach their own handlers first. */
+  /* ANY button/link tap while signed out opens Google sign-in (capture phase,
+     so the tap never reaches its own handler first). Clicks on empty page
+     background do nothing — the landing stays viewable. */
   document.addEventListener('click', function (e) {
     if (currentUser) return;
     var t = e.target;
-    if (t && t.closest && t.closest('#authGate')) return; /* the gate's own button handles itself */
+    if (t && t.closest && t.closest('#authGate')) return; /* modal's own buttons handle themselves */
+    var el = (t && t.closest) ? t.closest('button, a, input, select, textarea, label, [data-page], [role="button"]') : null;
+    if (!el) return;
+    var pg = el.getAttribute && el.getAttribute('data-page');
+    if (!pg && el.getAttribute && el.getAttribute('onclick')) {
+      var m = el.getAttribute('onclick').match(/go\('([^']+)'\)/);
+      if (m) pg = m[1];
+    }
+    pendingPage = pg || null;
     e.preventDefault();
     e.stopPropagation();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
@@ -103,11 +125,11 @@
   }, true);
 
   function init() {
-    setLocked(true);
+    setLocked(false); /* landing visible immediately */
     renderUser(null);
     var b = btnEl();
     if (typeof firebase === 'undefined' || !firebase.auth) {
-      showError('Google sign-in could not load (Firebase did not load). Check your connection and reload the page. The site stays locked until sign-in works.');
+      showError('Google sign-in could not load (Firebase did not load). Check your connection and reload the page.');
       if (b) b.disabled = true;
       return;
     }
@@ -117,11 +139,16 @@
       if (auth.setPersistence) auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function () {});
       auth.onAuthStateChanged(function (user) {
         currentUser = user || null;
-        if (user) { clearError(); setLocked(false); renderUser(user); }
-        else { setLocked(true); renderUser(null); }
+        if (user) {
+          clearError(); hideGate(); setLocked(false); renderUser(user);
+          if (pendingPage) { var p = pendingPage; pendingPage = null; setTimeout(function () { if (window.go) window.go(p); }, 50); }
+        } else {
+          setLocked(true); renderUser(null);
+        }
       });
     } catch (e) {
-      showError('Google sign-in is not configured correctly: ' + (e && e.message ? e.message : 'Firebase setup error.') + ' The site stays locked — no guest access.');
+      showGate();
+      showError('Google sign-in is not configured correctly: ' + (e && e.message ? e.message : 'Firebase setup error.'));
       if (b) b.disabled = true;
     }
   }

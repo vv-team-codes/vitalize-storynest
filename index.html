@@ -11,20 +11,22 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="StoryNest">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="hero.css?v=5">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
-<body class="locked">
-<div id="authGate" role="dialog" aria-modal="true" aria-label="Sign in with Google">
+<body class="on-home">
+<div id="authGate" class="auth-modal" role="dialog" aria-modal="true" aria-label="Sign in with Google">
   <div class="gate-card">
     <div class="gate-logo">📖✦</div>
     <h1>Vitalize StoryNest</h1>
     <p class="gate-sub">AI Children’s Storytelling Studio</p>
-    <p>Sign in with Google to continue. Every tap on this site opens Google sign-in — there is no guest access.</p>
+    <p>Sign in with Google to continue.</p>
     <button class="google-btn" id="googleSignInBtn" type="button" onclick="startGoogleSignIn()"><span class="g-logo">G</span><span id="googleBtnLabel">Continue with Google</span></button>
     <p id="authError" class="error-text" style="display:none"></p>
     <p class="muted small">Free · Unlimited · Private. Your books stay in your browser.</p>
+    <button class="btn" type="button" onclick="closeAuthGate()">Maybe later</button>
   </div>
 </div>
 <header class="topbar">
@@ -34,34 +36,39 @@
     <button data-page="home" class="active">Home</button>
     <button data-page="book">Picture Book</button>
     <button data-page="animation">Animation</button>
-    <button data-page="music">Music Video</button>
-    <button data-page="comic">Comic</button>
     <button data-page="library">Library</button>
-    <button data-page="projects">My Projects</button>
-    <button data-page="dashboard">Dashboard</button>
-    <button data-page="settings">Settings</button>
-    <button data-page="admin">Admin</button>
+    <button data-page="pricing">Pricing</button>
   </nav>
-  <div class="top-right"><span class="pill" id="limitPill">Unlimited · Private</span><span class="pill soft" id="countPill"></span><span id="userChip" style="display:none"><img id="userPhoto" alt="" width="28" height="28"><span id="userName"></span><button type="button" onclick="signOutUser()">Sign out</button></span><button class="btn install-btn" id="installBtn" onclick="installApp()">📲 Install app</button></div>
+  <div class="top-right"><span class="pill" id="limitPill">Unlimited · Private</span><span class="pill soft" id="countPill"></span><span id="userChip" style="display:none"><img id="userPhoto" alt="" width="28" height="28"><span id="userName"></span><button type="button" onclick="signOutUser()">Sign out</button></span><button class="btn more-btn" id="moreBtn" type="button" onclick="toggleMoreMenu()">☰ More</button><button class="btn signin-btn" id="topSignInBtn" type="button" onclick="startGoogleSignIn()">Sign In</button><button class="btn getstarted-btn" id="topGetStartedBtn" type="button" onclick="go('book')">Get Started ✨</button><button class="btn install-btn" id="installBtn" onclick="installApp()">📲 Install app</button></div>
+  <div id="moreMenu" class="more-menu" aria-label="More sections">
+    <button type="button" onclick="go('music')">🎵 Music Video</button>
+    <button type="button" onclick="go('comic')">💬 Comic Creator</button>
+    <button type="button" onclick="go('projects')">🗂 My Projects</button>
+    <button type="button" onclick="go('dashboard')">📊 Dashboard</button>
+    <button type="button" onclick="go('settings')">⚙️ Settings</button>
+    <button type="button" onclick="go('admin')">🛡 Admin</button>
+  </div>
 </header>
 <main id="app">
 
 <!-- HOME -->
 <section class="page active" id="page-home">
-  <div class="hero">
-    <div>
-      <span class="badge">Free · Unlimited · Private — no tokens, no daily limits</span>
-      <h1>Every child deserves a story made just for them.</h1>
-      <p>Create picture books, animations, songs and comics in your browser. Google sign-in is required to continue. No payment, no upload to a server — your work stays in this browser (localStorage).</p>
-      <div class="cta-row">
-        <button class="btn primary" onclick="go('book')">✨ Create a Picture Book</button>
-        <button class="btn" onclick="go('animation')">🎬 Animation Studio</button>
-        <button class="btn" onclick="go('music')">🎵 Music Video</button>
-        <button class="btn" onclick="go('comic')">💬 Comic Creator</button>
-      </div>
-      <p class="muted small">Built-in engine only. External AI providers (Runway / Pika / Luma / Kling / Veo, LLM, image, music) are optional in Settings — a key shows “Key saved — not verified” until a live test passes. Nothing here fakes a video or a melody.</p>
-    </div>
-    <div class="hero-art" id="heroArt"></div>
+  <div class="landing-hero" role="img" aria-label="Vitalize StoryNest — magical treehouse, a boy and his dog at sunset, a castle on a hill">
+    <button class="hotspot hs-brand" type="button" aria-label="Vitalize StoryNest — Home" onclick="go('home')"></button>
+    <button class="hotspot hs-home" type="button" aria-label="Home" onclick="go('home')"></button>
+    <button class="hotspot hs-book" type="button" aria-label="Picture Book" onclick="go('book')"></button>
+    <button class="hotspot hs-animation" type="button" aria-label="Animation" onclick="go('animation')"></button>
+    <button class="hotspot hs-library" type="button" aria-label="Library" onclick="go('library')"></button>
+    <button class="hotspot hs-pricing" type="button" aria-label="Pricing" onclick="go('pricing')"></button>
+    <button class="hotspot hs-signin" type="button" aria-label="Sign In" onclick="startGoogleSignIn()"></button>
+    <button class="hotspot hs-getstarted" type="button" aria-label="Get Started" onclick="go('book')"></button>
+    <button class="hotspot hs-create" type="button" aria-label="Create Your Story" onclick="go('book')"></button>
+    <button class="hotspot hs-card-book" type="button" aria-label="Picture Book — Create illustrated story books" onclick="go('book')"></button>
+    <button class="hotspot hs-card-animation" type="button" aria-label="Animation — Bring stories to life" onclick="go('animation')"></button>
+    <button class="hotspot hs-card-music" type="button" aria-label="Music Video — Add music to your story" onclick="go('music')"></button>
+    <button class="hotspot hs-card-comic" type="button" aria-label="Comic — Create fun comic stories" onclick="go('comic')"></button>
+    <h1 class="sr-only">Build Magical Stories for Curious Minds</h1>
+    <p class="sr-only">Create, animate and share unique stories for children with the power of AI.</p>
   </div>
   <div class="grid3" id="homeStats"></div>
   <h2>How it works</h2>
@@ -72,6 +79,19 @@
   </div>
   <h2>Sample books in this browser</h2>
   <div class="grid3" id="homeSamples"></div>
+</section>
+
+
+<!-- PRICING -->
+<section class="page" id="page-pricing">
+  <h1>✨ Pricing — Free, Unlimited, Private</h1>
+  <p class="muted">No subscriptions, no tokens, no daily limits. Everything in the built-in engine is free.</p>
+  <div class="grid3">
+    <div class="card"><h3>Free — ₹0</h3><p>Unlimited picture books, animations, songs and comics. No payment, no upload to a server — your work stays in your browser.</p></div>
+    <div class="card"><h3>What is included</h3><p>Picture Book Generator, Animation Studio, Music Video Creator, Comic Creator, Library, PDF export, read-aloud.</p></div>
+    <div class="card"><h3>Optional extras</h3><p>External AI providers (Runway / Pika / Luma / Kling / Veo, LLM, image, music) are optional in Settings and have their own billing if you connect one.</p></div>
+  </div>
+  <div class="row"><button class="btn primary" onclick="go('book')">Create Your Story →</button></div>
 </section>
 
 <!-- BOOK -->
@@ -275,7 +295,7 @@
 <footer><p>Vitalize StoryNest — original content only. Built-in engine, unlimited private use. <a href="https://github.com/vv-team-codes/vitalize-storynest">GitHub: vv-team-codes/vitalize-storynest</a></p></footer>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="auth.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="auth.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
