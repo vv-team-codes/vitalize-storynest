@@ -443,17 +443,16 @@ body:not(.signed-in).on-home main{padding-bottom:0}
 /* ---- v21: mobile — no sign-in flash + header order + sticky header ----
    Flash: auth.js used to mark the page signed-in before Firebase answered,
    so the post-login page flashed for ~1s on open, then flipped to the
-   welcome page. Now the page starts with .auth-pending (index.html): the
-   header and main stay hidden behind a brand splash until the first
-   onAuthStateChanged, with a 3s fallback in auth.js.
+   welcome page. v21 hid the page behind a purple brand splash until the
+   first onAuthStateChanged (3s fallback). v26: splash removed at the
+   user's request — the welcome hero shows immediately on load; a brief
+   flash of the welcome page for signed-in users is accepted.
    Centred menu: the brand's margin-right:auto AND .top-right's
    margin-left:auto split the free space equally around #menuBtn, so the
    burger sat in the middle between the logo and Get Started. One auto
    margin only now, and the menu button moves after Get Started.
    The header is sticky on mobile so Get Started + menu never swipe away
    while scrolling. */
-body.auth-pending .topbar,body.auth-pending main,body.auth-pending footer,body.auth-pending #bottomnav{visibility:hidden}
-body.auth-pending::after{content:"ekiddy.com";position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#6d28d9;color:#fff;font:700 28px/1 system-ui,-apple-system,"Segoe UI",sans-serif;z-index:9999}
 @media screen and (max-width:768px){
   .topbar{position:sticky;top:0;z-index:40}
   body:not(.signed-in) #menuBtn{order:2}
