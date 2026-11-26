@@ -90,6 +90,27 @@ means the daily limit was hit (see below).
   or a queued/background generation — the site still works either
   way.
 
+## Video service — same key, same pattern
+
+`api/generate-video.js` works exactly like the image service above,
+on the SAME `OPENROUTER_API_KEY` — no new key, no new account.
+Because a clip takes minutes to render, it is async:
+
+- `POST /api/generate-video` with `{prompt, image, duration,
+  aspect_ratio, with_audio}` returns `{job_id}` immediately.
+- `GET /api/generate-video?action=status&id=<job_id>` returns
+  `{status, progress, video_url, expires_at, cost}`. When completed,
+  `video_url` is a signed download link — the browser downloads the
+  MP4 straight from it.
+- The Animation Studio chains up to 8 clips of 8s (≈ 1 minute):
+  each clip after the first starts from the previous clip's last
+  frame, then the site joins them into ONE finished video in the
+  browser (canvas + sound recording) with a single download — the
+  user never gets separate files to stitch.
+- Limits: **10 clips/day per IP, 40/day globally** (one full
+  1-minute film is 8 clips, about $3.20 at 720p with sound). When
+  the limit is hit the site falls back to its built-in renderer.
+
 ## If the site moves to Vercel entirely
 
 Add the Vercel domain to Firebase → Authentication → Settings →

@@ -542,6 +542,16 @@ function generateStoryboard(){
      background (built-in pictures stay until each realistic one
      arrives). */
   upgradeStoryboardImages();
+  prefillRvLines();
+  /* v17: a new storyboard replaces the old real-video clips. */
+  if(!rvBusy){
+    rvClips=[];
+    var rv=document.getElementById('rvVideo'); if(rv){rv.style.display='none';rv.removeAttribute('src');}
+    var jd=document.getElementById('rvJoinDownload'); if(jd) jd.style.display='none';
+    var jn=document.getElementById('rvJoinNote'); if(jn) jn.textContent='';
+    var rs=document.getElementById('rvStatus'); if(rs) rs.textContent='';
+    var rb=document.getElementById('rvProgress'); if(rb) rb.style.width='0%';
+  }
 }
 function toggleSceneDetail(i){const d=document.getElementById('scene-detail-'+i);if(!d)return;d.style.display=d.style.display==='none'?'block':'none';}
 function copyText(t){if(navigator.clipboard)navigator.clipboard.writeText(t);else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}}
@@ -859,6 +869,416 @@ function cancelVideoRender(){
   }
 }
 
+/* ---------- Real video (v17) ----------
+   Real moving clips with spoken dialogue, made through the site's
+   OWN video endpoint (VIDEO_PROXY_URL below) — the browser never
+   talks to any video provider directly, and NO provider name, model
+   name, API key or account appears anywhere in this file, in the
+   UI, or in any network call the browser can see. Server side lives
+   in api/generate-video.js (same pattern as api/generate-image.js).
+   Flow — ONE finished video, never separate files for the user to
+   stitch:
+   1. Each storyboard scene (up to 8) becomes one 8s clip. Scene 1
+      starts from its picture; every later scene starts from the
+      PREVIOUS clip's last frame (extracted in this browser), so the
+      joins are invisible.
+   2. The clips play one after another in the player below.
+   3. They are joined into ONE file automatically: the joined
+      playback is recorded (canvas + the clips' sound) into a single
+      .mp4/.webm, shown in the same player with ONE download button.
+      Joining plays through once in real time (~1 min for 1 min).
+      If this browser blocks sound autoplay, the join waits for one
+      tap on the Download button instead — a tap is a fresh gesture,
+      so the sound records. A joined file is never faked: if the
+      join cannot run, the clips still play in order and the note
+      says so plainly.
+   If the video service is busy, limited or unconfigured, the
+   built-in renderer above still works — a clip simply falls back
+   to the built-in video, never to a dead end. */
+const VIDEO_PROXY_URL='https://vitalize-storynest.vercel.app/api/generate-video';
+let rvBusy=false, rvCancel=false, rvClips=[], rvAutoplayBlocked=false, lastComicPanels=[];
+function rvAspect(){ var r=(document.getElementById('anRatio')||{}).value||'9:16'; return r==='16:9'?'16:9':'9:16'; }
+/* First frame for a clip: the scene picture, rasterised to a JPEG
+   (max 1024px) so the upload stays small and the format is one the
+   video service accepts (built-in pictures are SVG, which it is
+   not). Returns a data URL, or null if the picture cannot be read. */
+function rasterizeFirstFrame(img){
+  return new Promise(function(resolve){
+    if(!img||typeof img!=='string'){ resolve(null); return; }
+    var im=new Image();
+    im.onload=function(){
+      try{
+        var w=im.naturalWidth||800, h=im.naturalHeight||600;
+        if(img.indexOf('data:image/svg+xml')!==0 && w<=1024){ resolve(img); return; }
+        var sc=Math.min(1,1024/w);
+        var c=document.createElement('canvas');
+        c.width=Math.max(2,Math.round(w*sc)); c.height=Math.max(2,Math.round(h*sc));
+        var ctx=c.getContext('2d');
+        ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,c.width,c.height);
+        ctx.drawImage(im,0,0,c.width,c.height);
+        resolve(c.toDataURL('image/jpeg',0.85));
+      }catch(e){ resolve(null); }
+    };
+    im.onerror=function(){ resolve(null); };
+    im.src=img;
+  });
+}
+async function submitRealVideo(opts){
+  const r=await fetchWithTimeout(VIDEO_PROXY_URL,60000,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(opts)});
+  if(!r.ok){const e=new Error('Video service HTTP '+r.status);e.status=r.status;throw e;}
+  const j=await r.json();
+  if(!j||typeof j.job_id!=='string') throw new Error('Video service: no job id');
+  return j.job_id;
+}
+async function pollRealVideo(jobId,onProgress,cancelledFn){
+  const isCancelled=cancelledFn||function(){return rvCancel;};
+  const started=Date.now();
+  for(;;){
+    if(isCancelled()) throw new Error('cancelled');
+    if(Date.now()-started>12*60*1000) throw new Error('Video took too long — try again.');
+    await new Promise(function(res){setTimeout(res,10000);});
+    if(isCancelled()) throw new Error('cancelled');
+    const r=await fetchWithTimeout(VIDEO_PROXY_URL+'?action=status&id='+encodeURIComponent(jobId),30000);
+    if(!r.ok){const e=new Error('Video service HTTP '+r.status);e.status=r.status;throw e;}
+    const j=await r.json();
+    if(j&&j.status==='completed'){
+      if(!j.video_url) throw new Error('The finished clip expired before download.');
+      return j;
+    }
+    if(j&&j.status==='failed') throw new Error('The video service could not make this clip.');
+    if(onProgress) onProgress(j&&typeof j.progress==='number'?j.progress:null);
+  }
+}
+/* Fetch a finished clip as a same-origin blob URL when the host
+   allows it — same-origin blobs make the join reliable (canvas and
+   sound both work). Falls back to the signed URL for plain
+   playback when the fetch is blocked. */
+async function fetchClipBlob(url){
+  try{
+    const r=await fetch(url,{mode:'cors'});
+    if(!r.ok) return null;
+    const b=await r.blob();
+    if(!b||!b.size) return null;
+    return URL.createObjectURL(b);
+  }catch(e){ return null; }
+}
+/* Last frame of a finished clip, as a JPEG data URL — the next
+   clip's first frame. Returns null when the frame cannot be read
+   (the next clip then starts from its own scene picture). */
+function extractLastFrame(url){
+  return new Promise(function(resolve){
+    var done=false;
+    function fin(v){ if(!done){done=true; resolve(v);} }
+    var v=document.createElement('video');
+    v.crossOrigin='anonymous'; v.muted=true; v.preload='auto';
+    var to=setTimeout(function(){ v.src=''; fin(null); },20000);
+    v.addEventListener('error',function(){ clearTimeout(to); fin(null); });
+    v.addEventListener('loadedmetadata',function(){
+      try{ v.currentTime=Math.max(0,(v.duration||8)-0.15); }catch(e){ clearTimeout(to); fin(null); }
+    });
+    v.addEventListener('seeked',function(){
+      clearTimeout(to);
+      try{
+        var c=document.createElement('canvas');
+        c.width=v.videoWidth||1280; c.height=v.videoHeight||720;
+        c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+        fin(c.toDataURL('image/jpeg',0.85));
+      }catch(e){ fin(null); }
+      v.src='';
+    });
+    v.src=url;
+  });
+}
+function rvVideoPrompt(scene,line){
+  var p=scene.prompt||((scene.narration||'')+' — '+bibleText());
+  p+=' Motion: gentle, smooth and continuous from the first frame; the characters stay the same throughout.';
+  if(line){
+    var clean=String(line).replace(/"/g,'').trim();
+    if(clean) p+=' Spoken dialogue — the character says: "'+clean+'". The speaking character\'s mouth moves in sync with the words, natural lip-sync.';
+  }
+  return p.slice(0,1100);
+}
+function prefillRvLines(){
+  var el=document.getElementById('rvLines'); if(!el||!storyboard.length) return;
+  el.value=storyboard.map(function(s){
+    var t=(s.narration||'').split('.')[0].trim();
+    return t?t+'.':'';
+  }).join('\n');
+}
+function playRvClips(){
+  var v=document.getElementById('rvVideo'); if(!v||!rvClips.length) return;
+  var idx=0, pre=null;
+  function playIdx(i){
+    idx=i; var c=rvClips[i]; if(!c) return;
+    v.src=c.blobUrl||c.url; v.style.display='block';
+    var p=v.play(); if(p&&p.catch) p.catch(function(){});
+    if(pre){ pre.src=''; pre=null; }
+    if(rvClips[i+1]){ pre=document.createElement('video'); pre.preload='auto'; pre.src=rvClips[i+1].blobUrl||rvClips[i+1].url; }
+  }
+  v.onended=function(){ if(idx+1<rvClips.length) playIdx(idx+1); };
+  playIdx(0);
+}
+function cancelRealVideo(){
+  rvCancel=true;
+  var st=document.getElementById('rvStatus');
+  if(st) st.textContent='Cancelling…';
+}
+async function generateJoinedRealVideo(){
+  if(rvBusy) return;
+  if(!storyboard.length) generateStoryboard();
+  if(!storyboard.length){ alert('Generate a storyboard first.'); return; }
+  ensureSceneImages();
+  var status=document.getElementById('rvStatus'), bar=document.getElementById('rvProgress'),
+      btn=document.getElementById('rvBtn'), cancelBtn=document.getElementById('rvCancel'),
+      note=document.getElementById('rvNote'), vid=document.getElementById('rvVideo'),
+      joinDl=document.getElementById('rvJoinDownload'), joinNote=document.getElementById('rvJoinNote');
+  var lines=(document.getElementById('rvLines').value||'').split('\n');
+  var scenes=storyboard.slice(0,8);
+  var totalSecs=scenes.length*8;
+  rvBusy=true; rvCancel=false; rvAutoplayBlocked=false; rvClips=[];
+  if(btn){btn.disabled=true;btn.textContent='⏳ Making your video…';}
+  if(cancelBtn) cancelBtn.style.display='inline-block';
+  if(joinDl) joinDl.style.display='none';
+  if(joinNote) joinNote.textContent='';
+  if(vid){vid.style.display='none';vid.removeAttribute('src');vid.load();}
+  function setBar(p){ if(bar) bar.style.width=Math.max(0,Math.min(100,p))+'%'; }
+  try{
+    for(var i=0;i<scenes.length;i++){
+      if(rvCancel) throw new Error('cancelled');
+      var s=scenes[i];
+      if(status) status.textContent='Clip '+(i+1)+' of '+scenes.length+' — making the moving scene… (a few minutes in total)';
+      setBar(Math.round(i/scenes.length*70));
+      var first;
+      if(i===0){
+        first=await rasterizeFirstFrame(s.img);
+      }else{
+        var prev=rvClips[i-1];
+        var last=await extractLastFrame(prev.blobUrl||prev.url);
+        first=last||await rasterizeFirstFrame(s.img);
+      }
+      var jobId=await submitRealVideo({prompt:rvVideoPrompt(s,lines[i]||''),image:first,duration:8,aspect_ratio:rvAspect(),with_audio:true});
+      var done=await pollRealVideo(jobId,function(p){
+        if(status) status.textContent='Clip '+(i+1)+' of '+scenes.length+' — rendering…'+(p!=null?' '+Math.round(p)+'%':'');
+        setBar(Math.round((i+(p||0)/100)/scenes.length*70));
+      });
+      var blobUrl=await fetchClipBlob(done.video_url);
+      rvClips.push({url:done.video_url,blobUrl:blobUrl,scene:s.n});
+      if(status) status.textContent='Clip '+(i+1)+' of '+scenes.length+' done — playing it below while the next one is made.';
+      setBar(Math.round((i+1)/scenes.length*70));
+      playRvClips();
+    }
+    if(rvClips.length===1){
+      /* One clip IS the finished video — no join needed. */
+      if(vid){vid.src=rvClips[0].blobUrl||rvClips[0].url;vid.style.display='block';vid.load();}
+      if(joinDl){joinDl.href=rvClips[0].blobUrl||rvClips[0].url;joinDl.download='ekiddy-real-video-8s.mp4';joinDl.textContent='⬇ Download video (.mp4)';joinDl.style.display='inline-block';}
+      if(status) status.textContent='Done — one 8s real video with sound.';
+      setBar(100);
+      logHistory('video','Real video ready: 1 clip, 8s'); save();
+      return;
+    }
+    /* Join all clips into ONE finished video, automatically. */
+    if(status) status.textContent='All '+rvClips.length+' clips ready — joining them into one '+totalSecs+'s video now. Keep this tab open and the sound on.';
+    setBar(75);
+    var joined=await joinRvClips(function(done,total){
+      setBar(75+Math.round(done/total*25));
+      if(status) status.textContent='Joining… '+Math.round(done)+'s / '+total+'s — keep this tab open';
+    });
+    if(joined){
+      if(vid){vid.src=joined.url;vid.style.display='block';vid.load();}
+      if(joinDl){joinDl.href=joined.url;joinDl.download='ekiddy-video-'+totalSecs+'s.'+joined.ext;joinDl.textContent='⬇ Download 1-minute video (.'+joined.ext+')';joinDl.style.display='inline-block';}
+      if(joinNote) joinNote.textContent=joined.withAudio?'One finished video — picture and spoken dialogue together.':'One finished video — the picture joined, but this browser could not capture the sound into the file. The clips above still play with sound.';
+      if(status) status.textContent='Done — one '+totalSecs+'s video, ready to watch and download.';
+      setBar(100);
+      logHistory('video','Real video joined: '+rvClips.length+' clips, '+totalSecs+'s'); save();
+    }else if(rvAutoplayBlocked){
+      /* Sound autoplay was blocked, so the automatic join stopped
+         rather than making a silent file. One tap on Download is a
+         fresh gesture, so the join records with sound then. */
+      if(joinDl){joinDl.href='#';joinDl.textContent='⬇ Download 1-minute video';joinDl.style.display='inline-block';joinDl.onclick=function(e){e.preventDefault();downloadJoinedVideo();return false;};}
+      if(joinNote) joinNote.textContent='Tap Download to join the clips into one file — it plays through once (about a minute) so the spoken dialogue is in the file too.';
+      if(status) status.textContent='Clips ready — playing in order above. Tap Download for the single joined file.';
+      setBar(100);
+      playRvClips();
+    }else{
+      playRvClips();
+      if(joinNote) joinNote.textContent='The clips play one after another above. This browser could not join them into a single file — try Chrome on a desktop for the joined download.';
+      if(status) status.textContent='Clips ready — playing in order above.';
+      setBar(100);
+    }
+  }catch(e){
+    if(e&&e.message==='cancelled'){ if(status) status.textContent='Cancelled — tap Generate to try again.'; }
+    else if(e&&e.status===429){ if(status) status.textContent='The video service is busy today (daily limit) — try again tomorrow, or use the built-in renderer above.'; }
+    else if(e&&e.status===503){ if(status) status.textContent='The video service is not set up yet — use the built-in renderer above.'; }
+    else { if(status) status.textContent='Real video isn\'t available right now — the built-in renderer above still works.'; }
+    setBar(0);
+    if(rvClips.length) playRvClips();
+  }finally{
+    rvBusy=false;
+    if(btn){btn.disabled=false;btn.textContent='▶ Generate 1-minute real video';}
+    if(cancelBtn) cancelBtn.style.display='none';
+  }
+}
+async function downloadJoinedVideo(){
+  /* Tap = fresh user gesture, so clip playback with sound is
+     allowed and the joined file records with dialogue. */
+  var joinDl=document.getElementById('rvJoinDownload'), joinNote=document.getElementById('rvJoinNote'),
+      status=document.getElementById('rvStatus'), bar=document.getElementById('rvProgress'),
+      vid=document.getElementById('rvVideo');
+  if(!rvClips.length||rvClips.length<2) return;
+  rvCancel=false; rvAutoplayBlocked=false;
+  if(joinDl){joinDl.textContent='⏳ Joining…';}
+  if(status) status.textContent='Joining the clips into one video — keep this tab open and the sound on.';
+  var totalSecs=rvClips.length*8;
+  var joined=await joinRvClips(function(done,total){
+    if(bar) bar.style.width=Math.round(75+done/total*25)+'%';
+    if(status) status.textContent='Joining… '+Math.round(done)+'s / '+total+'s — keep this tab open';
+  });
+  if(joined){
+    if(vid){vid.src=joined.url;vid.style.display='block';vid.load();}
+    if(joinDl){joinDl.href=joined.url;joinDl.download='ekiddy-video-'+totalSecs+'s.'+joined.ext;joinDl.textContent='⬇ Download 1-minute video (.'+joined.ext+')';joinDl.onclick=null;}
+    if(joinNote) joinNote.textContent=joined.withAudio?'One finished video — picture and spoken dialogue together.':'One finished video — the picture joined, but this browser could not capture the sound into the file. The clips above still play with sound.';
+    if(status) status.textContent='Done — one '+totalSecs+'s video, ready to watch and download.';
+    if(bar) bar.style.width='100%';
+    logHistory('video','Real video joined on download: '+rvClips.length+' clips, '+totalSecs+'s'); save();
+  }else{
+    if(joinDl){joinDl.textContent='⬇ Download 1-minute video';}
+    if(joinNote) joinNote.textContent='This browser could not join the clips — the clips above still play in order. Try Chrome on a desktop for the joined download.';
+    if(status) status.textContent='Joining failed — clips still play in order above.';
+  }
+}
+async function joinRvClips(onTick){
+  /* Record the joined playback into ONE file: draw each clip, in
+     order, onto one canvas and record that canvas with
+     MediaRecorder — the same proven path as the built-in renderer.
+     Sound comes from the clips through an AudioContext so the
+     spoken dialogue is in the file too. Returns {url, ext,
+     withAudio} or null. Sets rvAutoplayBlocked when sound playback
+     was refused, so the caller can offer a tap-to-join instead of
+     silently making a soundless file. */
+  if(!rvClips.length) return null;
+  if(typeof MediaRecorder==='undefined') return null;
+  rvAutoplayBlocked=false;
+  var first=document.createElement('video');
+  first.preload='auto'; first.src=rvClips[0].blobUrl||rvClips[0].url;
+  var meta=await new Promise(function(res){
+    var to=setTimeout(function(){res(null);},15000);
+    first.addEventListener('loadedmetadata',function(){clearTimeout(to);res({w:first.videoWidth||1280,h:first.videoHeight||720});});
+    first.addEventListener('error',function(){clearTimeout(to);res(null);});
+  });
+  if(!meta) return null;
+  var W=meta.w,H=meta.h;
+  var canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+  var ctx=canvas.getContext('2d');
+  var fmt=((document.getElementById('dlFormat')||{}).value)||'webm';
+  var mp4Mimes=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1.42E01E','video/mp4'];
+  var webmMimes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  var supported=function(list){return list.find(function(m){try{return MediaRecorder.isTypeSupported(m);}catch(e){return false;}})||'';};
+  var mime=supported(fmt==='mp4'?mp4Mimes:webmMimes);
+  if(!mime) mime=supported(fmt==='mp4'?webmMimes:mp4Mimes);
+  if(!mime) return null;
+  var ext=mime.indexOf('mp4')>=0?'mp4':'webm';
+  var stream=canvas.captureStream(30);
+  var withAudio=false, actx=null, dest=null;
+  try{
+    actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended'){ await actx.resume(); }
+    dest=actx.createMediaStreamDestination();
+    stream.addTrack(dest.stream.getAudioTracks()[0]);
+  }catch(e){ actx=null; dest=null; }
+  var rec;
+  try{ rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5000000}); }
+  catch(e){ if(actx){try{actx.close();}catch(e2){}} return null; }
+  var chunks=[];
+  rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+  var stopped=new Promise(function(res){ rec.onstop=function(){res();}; });
+  try{ rec.start(250); }catch(e){ if(actx){try{actx.close();}catch(e2){}} return null; }
+  var totalDur=0, cancelled=false;
+  for(var i=0;i<rvClips.length;i++){
+    if(rvCancel){ cancelled=true; break; }
+    var clip=rvClips[i];
+    var el=document.createElement('video');
+    el.preload='auto'; el.playsInline=true; el.volume=1; el.muted=false;
+    el.src=clip.blobUrl||clip.url;
+    var audioOk=false;
+    if(actx&&dest){
+      try{
+        var srcNode=actx.createMediaElementSource(el);
+        srcNode.connect(dest); srcNode.connect(actx.destination);
+        audioOk=true;
+      }catch(e){ audioOk=false; }
+    }
+    var loaded=await new Promise(function(res){
+      var to=setTimeout(function(){res(false);},20000);
+      el.addEventListener('loadedmetadata',function(){clearTimeout(to);res(true);});
+      el.addEventListener('error',function(){clearTimeout(to);res(false);});
+    });
+    if(!loaded||rvCancel){ if(rvCancel) cancelled=true; el.src=''; continue; }
+    var dur=el.duration||8;
+    var played=false, blocked=false;
+    try{
+      await el.play();
+      played=true;
+    }catch(e){
+      if(e&&e.name==='NotAllowedError'){ blocked=true; }
+    }
+    if(blocked){ rvAutoplayBlocked=true; el.src=''; break; }
+    if(!played){ el.src=''; continue; }
+    if(audioOk) withAudio=true;
+    await new Promise(function(res){
+      var startT=performance.now(), raf=null, done=false;
+      function frame(){
+        if(done) return;
+        if(rvCancel){ done=true; if(raf) cancelAnimationFrame(raf); res(false); return; }
+        try{
+          var iw=el.videoWidth||W, ih=el.videoHeight||H;
+          var sc=Math.max(W/iw,H/ih), dw=iw*sc, dh=ih*sc;
+          ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+          ctx.drawImage(el,(W-dw)/2,(H-dh)/2,dw,dh);
+        }catch(e){ /* a blocked frame: keep the last good frame */ }
+        if(onTick) onTick((performance.now()-startT)/1000+totalDur, rvClips.length*8);
+        if(el.ended||el.currentTime>=dur-0.05){ done=true; res(true); return; }
+        raf=requestAnimationFrame(frame);
+      }
+      el.addEventListener('ended',function(){ if(!done){done=true; if(raf) cancelAnimationFrame(raf); res(true);} });
+      setTimeout(function(){ if(!done){done=true; if(raf) cancelAnimationFrame(raf); res(true);} },(dur+5)*1000);
+      raf=requestAnimationFrame(frame);
+    });
+    totalDur+=dur;
+    el.src='';
+    if(rvCancel){ cancelled=true; break; }
+  }
+  try{ if(rec.state!=='inactive') rec.stop(); }catch(e){}
+  await stopped;
+  if(actx){ try{ actx.close(); }catch(e){} }
+  if(cancelled||rvAutoplayBlocked||!chunks.length) return null;
+  var blob=new Blob(chunks,{type:mime});
+  return {url:URL.createObjectURL(blob),ext:ext,withAudio:withAudio};
+}
+async function generateComicPanelVideo(i){
+  /* One comic panel becomes one 8s moving clip with its dialogue
+     spoken — same video service, same first-frame picture. */
+  var p=lastComicPanels&&lastComicPanels[i];
+  var box=document.getElementById('comic-panel-video-'+i);
+  if(!p||!box) return;
+  box.innerHTML='<p class="muted small">Making the moving panel… (a minute or so — keep this tab open)</p>';
+  try{
+    var first=await rasterizeFirstFrame(p.img);
+    var line=String(p.dialogue||'').replace(/"/g,'').trim();
+    var prompt=(p.text||'')+' — '+bibleText()+' Motion: gentle, smooth and continuous from the first frame; the characters stay the same throughout.'
+      +(line?' Spoken dialogue — the character says: "'+line+'". The speaking character\'s mouth moves in sync with the words, natural lip-sync.':'');
+    var jobId=await submitRealVideo({prompt:prompt.slice(0,1100),image:first,duration:8,aspect_ratio:'16:9',with_audio:true});
+    var done=await pollRealVideo(jobId,null,function(){return false;});
+    var blobUrl=await fetchClipBlob(done.video_url);
+    var src=blobUrl||done.video_url;
+    box.innerHTML='<video controls playsinline src="'+src+'" style="width:100%;border-radius:12px"></video><div class="row"><a class="btn primary" href="'+src+'" download="ekiddy-comic-panel-'+(i+1)+'-8s.mp4">⬇ Download panel video (.mp4)</a></div>';
+    logHistory('video','Comic panel '+(i+1)+' real video ready'); save();
+  }catch(e){
+    if(e&&e.status===429) box.innerHTML='<p class="muted small">The video service is busy today (daily limit) — the picture above stays.</p>';
+    else if(e&&e.status===503) box.innerHTML='<p class="muted small">The video service is not set up yet — the picture above stays.</p>';
+    else box.innerHTML='<p class="muted small">Real video isn\'t available right now — the picture above stays.</p>';
+  }
+}
+
 /* ---------- Music / Comic ---------- */
 function generateSong(){
   const topic=document.getElementById('muTopic').value, lang=document.getElementById('muLang').value, genre=document.getElementById('muGenre').value;
@@ -874,8 +1294,9 @@ function generateComic(){
   const layout=document.getElementById('coLayout').value;
   const panels=[];for(let i=0;i<n;i++)panels.push({n:i+1,dialogue:i===0?'"Let\'s build it!" said Bolt.':i===n-1?'"We did it!" cheered Pip.':'"Look! Up there!" laughed Pip.',text:'Panel '+(i+1)+': '+idea+' — moment '+(i+1)+' of '+n+'.',img:makeSVG({scene:'Panel '+(i+1)+': '+idea+' — moment '+(i+1)+' of '+n+'.',text:'"Let\'s build it!"'},'Comic')});
   const comic={id:uid(),kind:'comic',title:idea,desc:layout+' · '+n+' panels',created:new Date().toISOString(),panels};
+  lastComicPanels=panels;
   state.projects.unshift(comic);
-  document.getElementById('comicOut').innerHTML='<div class="page-grid">'+panels.map((p,i)=>'<div class="page-card"><img id="comic-panel-img-'+i+'" src="'+p.img+'" alt="Comic panel"><div class="pad"><strong>Panel '+p.n+'</strong><p>'+esc(p.text)+'</p><p><strong>'+esc(p.dialogue)+'</strong></p></div></div>').join('')+'</div>';
+  document.getElementById('comicOut').innerHTML='<div class="page-grid">'+panels.map((p,i)=>'<div class="page-card"><img id="comic-panel-img-'+i+'" src="'+p.img+'" alt="Comic panel"><div class="pad"><strong>Panel '+p.n+'</strong><p>'+esc(p.text)+'</p><p><strong>'+esc(p.dialogue)+'</strong></p><div class="row"><button class="btn" onclick="generateComicPanelVideo('+i+')">🎥 Real video (8s)</button></div><div id="comic-panel-video-'+i+'"></div></div></div>').join('')+'</div>';
   logHistory('comic','Generated comic: '+idea+' ('+n+' panels)');save();
   /* v13: upgrade the panels to the picked image model in the
      background (built-in pictures stay until each realistic one

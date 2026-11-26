@@ -280,6 +280,14 @@
         <p class="muted small">No MP3: this video has no audio track, so an MP3 would be silence.</p>
         <p class="muted small" id="renderNote"></p>
       </div>
+      <div class="card anim-realvideo-card"><h3>🎥 Real video — characters move &amp; speak</h3>
+        <p class="muted small">Each scene becomes a real moving clip with spoken dialogue, made on the site's own video service — then all clips are joined into ONE finished video automatically. The first scene starts from its picture; every later scene starts from the previous clip's last frame, so the joins are invisible. No separate files to stitch yourself.</p>
+        <label>Spoken lines — one per scene, in order (leave a line blank for motion only)<textarea id="rvLines" rows="3" placeholder="Milo says: &quot;Look! The lantern is glowing!&quot;"></textarea></label>
+        <div class="row"><button class="btn primary" id="rvBtn" onclick="generateJoinedRealVideo()">▶ Generate 1-minute real video</button><button class="btn" id="rvCancel" style="display:none" onclick="cancelRealVideo()">✕ Cancel</button><span id="rvStatus" class="muted"></span></div>
+        <div class="progress-wrap"><div class="progress-bar" id="rvProgress"></div></div>
+        <p class="muted small" id="rvNote">Needs a storyboard first — tap “Generate storyboard” above. Up to 8 scenes × 8 seconds ≈ 1 minute. If the video service is busy, the built-in renderer above still works.</p>
+        <div class="anim-video-row"><video id="rvVideo" controls playsinline style="display:none"></video><div class="anim-video-side"><div class="row"><a class="btn primary" id="rvJoinDownload" style="display:none" href="#">⬇ Download 1-minute video</a></div><p class="muted small" id="rvJoinNote"></p></div></div>
+      </div>
       <details class="card anim-providers-card"><summary>External video providers</summary><p class="muted small">Configure in Settings → Providers. Runway, Pika, Luma, Kling, Veo — a saved key shows “Key saved — not verified” until Test Connection passes. Copy-ready prompts above are made for pasting into any of them.</p></details>
     </div>
   </div>
@@ -389,6 +397,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="auth.js?v=17"></script>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>
