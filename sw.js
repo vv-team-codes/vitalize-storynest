@@ -11,9 +11,10 @@
    v21: mobile flash fix + header order + sticky header (styles.css + auth.js + index.html) + versions bumped to v21.
    v22: visible welcome motion — flowing water, pool ripples, swaying grass, wind petals, faster clouds (hero.css + index.html) + versions bumped to v22.
    v23: real video — server-side video service (api/generate-video.js) + Animation Studio real-video mode with automatic 1-minute join + comic panel clips (app.js + index.html) + versions bumped to v23.
+   v25: welcome hero is a video background (hero-video.js + index.html + hero.css) + smaller line-style icons on the four hero cards (index.html + hero.css); static hero picture stays as poster/fallback; assets v25, SW vsn-shell-v25.
    v24: Quick Video — in-site video only (app.js + index.html + styles.css): title/topic/wish-list, character upload or 3 sample multi-part SVG characters, style picture picker, animation select, parallel fast scene pictures, direct render with moving character parts (arms/legs/mouth) + scene crossfades; external-video UI hidden, video proxy code kept dormant in the repo + versions bumped to v24. */
-const CACHE = 'vsn-shell-v24';
-const ASSETS = ['./', './index.html', './styles.css?v=22', './hero.css?v=22', './hero-bg.css?v=15', './logo.css?v=15', './app.js?v=18', './auth.js?v=17', './manifest.json', './icon.svg'];
+const CACHE = 'vsn-shell-v25';
+const ASSETS = ['./', './index.html', './styles.css?v=22', './hero.css?v=23', './hero-bg.css?v=15', './hero-video.js?v=25', './logo.css?v=15', './app.js?v=18', './auth.js?v=17', './manifest.json', './icon.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });

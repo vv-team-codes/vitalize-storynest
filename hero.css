@@ -215,3 +215,40 @@ body:not(.signed-in) .welcome-hero{min-height:100vh;min-height:100svh}
 .hero-grass span:nth-child(10){left:73%;height:36px;animation-delay:-.8s}
 .hero-grass span:nth-child(11){left:82%;height:30px;animation-delay:-1.9s}
 .hero-grass span:nth-child(12){left:91%;height:42px;animation-delay:-1.3s}
+
+/* ---- v25: welcome hero is a VIDEO background + smaller card icons ----
+   The static hero picture (hero-bg.css) is no longer the visible
+   background: the user's own 10s clip (boy + puppy under the treehouse,
+   castle + waterfall) plays looped, muted, autoplay, playsinline as a
+   full-hero video (hero-video.js sets the source from its embedded
+   base64 — same text-only push pattern as hero-bg.css). The static
+   picture stays underneath as the poster/fallback: it shows while the
+   video loads, if the video errors, and under prefers-reduced-motion
+   (hero-video.js removes the video there, and the CSS below hides it
+   too). The video is absolute, so it adds no height: the signed-out
+   hero is still exactly 100svh, no scroller. The old v18/v22 motion
+   overlays (fake clouds, shimmer, leaves, water, ripples, grass) are
+   hidden once the video actually plays (.hero-video-on) — the real
+   video already moves — but stay as the fallback look when it does not.
+   The .welcome-hero::after gradient stays above the video so the
+   headline and buttons stay readable. object-position matches the old
+   background-position framing (centre on desktop, 42% on mobile).
+   Card icons: the four hero cards used big painted 120x80 scene
+   illustrations; they are now small 48px line icons (purple/blue
+   strokes, gold accents) on a small white chip — titles and
+   descriptions unchanged. Scoped to .hero-card only, so the signed-in
+   simple-choices cards keep their illustrations. */
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 32%;z-index:0}
+.welcome-hero.hero-video-on .hero-glow,.welcome-hero.hero-video-on .hero-lantern,.welcome-hero.hero-video-on .sparkles,.welcome-hero.hero-video-on .hero-clouds,.welcome-hero.hero-video-on .hero-shimmer,.welcome-hero.hero-video-on .hero-tree-glow,.welcome-hero.hero-video-on .hero-leaves,.welcome-hero.hero-video-on .hero-water,.welcome-hero.hero-video-on .hero-ripples,.welcome-hero.hero-video-on .hero-grass{display:none}
+.hero-card .sc-art{width:54px;height:54px;min-height:0;margin:0 auto 8px;padding:0;border-radius:16px;background:rgba(255,255,255,.94);box-shadow:0 3px 10px rgba(9,26,71,.20);display:flex;align-items:center;justify-content:center}
+.hero-card .sc-art svg{width:34px;height:34px}
+@media screen and (max-width:768px){
+  .hero-video{object-position:42% center}
+}
+@media screen and (max-width:430px){
+  .hero-card .sc-art{width:46px;height:46px;border-radius:13px}
+  .hero-card .sc-art svg{width:29px;height:29px}
+}
+@media (prefers-reduced-motion:reduce){
+  .hero-video{display:none}
+}
