@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ekiddy">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=22">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="hero.css?v=22">
 <link rel="stylesheet" href="hero-bg.css?v=15">
@@ -238,7 +238,24 @@
 <!-- ANIMATION -->
 <section class="page" id="page-animation">
   <div class="anim-head"><button class="btn back-btn" type="button" onclick="go('home')">← Back</button><h1>🎬 AI Animation Studio</h1></div>
-  <p class="muted anim-intro">Storyboard + continuity-locked, copy-ready video prompts for an external provider — plus a built-in renderer that makes a real video in this browser, no key needed.</p>
+  <p class="muted anim-intro">Quick Video builds the story, pictures and video itself — then the built-in renderer makes a real video in this browser, frame by frame, no key needed. The storyboard below shows every scene.</p>
+  <div class="card qv-card" id="qvCard"><h3>⚡ Quick Video — make a video in one tap</h3>
+    <p class="muted small">Just a title, a topic and a wish-list. The site builds the story, pictures and video itself — no other app, no key, no cost. The video is made right here in your browser, frame by frame.</p>
+    <div class="qv-grid">
+      <label>Title <input id="qvTitle" placeholder="e.g. Milo and the Moon Lantern"></label>
+      <label>Topic <input id="qvTopic" placeholder="e.g. A brave little fox finds a glowing lantern"></label>
+    </div>
+    <label>Wish-list — what should happen? (one wish per line)<textarea id="qvWishes" rows="3" placeholder="e.g. Milo waves at the moon&#10;The puppy finds a red balloon&#10;Everyone laughs at the end"></textarea></label>
+    <h4>Character — upload yours, or pick a sample</h4>
+    <div class="row"><label class="btn" for="qvCharFile">⬆ Upload character picture</label><input type="file" id="qvCharFile" accept="image/*" style="display:none" onchange="qvCharFileChanged(this)"><img id="qvCharPreview" style="display:none;width:44px;height:44px;object-fit:cover;border-radius:10px" alt="Uploaded character"><span id="qvCharName" class="muted small">No upload yet — a sample below is used.</span></div>
+    <div id="qvChars" class="qv-chars"></div>
+    <h4>Style — tap a picture</h4>
+    <div id="qvStyles" class="qv-styles"></div>
+    <div class="row qv-anim-row"><label class="anim-format">Animation <select id="qvAnimSel"><option value="talk" selected>Talk &amp; smile</option><option value="wave">Wave hello</option><option value="walk">Walk</option><option value="run">Run</option><option value="dance">Dance</option><option value="jump">Jump for joy</option></select></label><label class="anim-format">Scenes <input type="number" id="qvScenes" min="3" max="6" value="4" style="width:70px"></label></div>
+    <div class="row"><button class="btn primary" id="qvBtn" onclick="buildQuickVideo()">▶ Make my video</button><button class="btn" id="qvCancel" style="display:none" onclick="cancelQuickVideo()">✕ Cancel</button><span id="qvStatus" class="muted"></span></div>
+    <div class="progress-wrap"><div class="progress-bar" id="qvProgress"></div></div>
+    <p class="muted small" id="qvNote">Pictures generate fast, a few seconds apart, then the video renders below (1 minute takes a full minute — keep this tab open).</p>
+  </div>
   <div class="card anim-idea-card"><h3>Storyboard</h3>
     <div class="anim-idea-grid">
       <div>
@@ -280,7 +297,7 @@
         <p class="muted small">No MP3: this video has no audio track, so an MP3 would be silence.</p>
         <p class="muted small" id="renderNote"></p>
       </div>
-      <div class="card anim-realvideo-card"><h3>🎥 Real video — characters move &amp; speak</h3>
+      <div class="card anim-realvideo-card" style="display:none"><h3>🎥 Real video — characters move &amp; speak</h3>
         <p class="muted small">Each scene becomes a real moving clip with spoken dialogue, made on the site's own video service — then all clips are joined into ONE finished video automatically. The first scene starts from its picture; every later scene starts from the previous clip's last frame, so the joins are invisible. No separate files to stitch yourself.</p>
         <label>Spoken lines — one per scene, in order (leave a line blank for motion only)<textarea id="rvLines" rows="3" placeholder="Milo says: &quot;Look! The lantern is glowing!&quot;"></textarea></label>
         <div class="row"><button class="btn primary" id="rvBtn" onclick="generateJoinedRealVideo()">▶ Generate 1-minute real video</button><button class="btn" id="rvCancel" style="display:none" onclick="cancelRealVideo()">✕ Cancel</button><span id="rvStatus" class="muted"></span></div>
@@ -288,7 +305,7 @@
         <p class="muted small" id="rvNote">Needs a storyboard first — tap “Generate storyboard” above. Up to 8 scenes × 8 seconds ≈ 1 minute. If the video service is busy, the built-in renderer above still works.</p>
         <div class="anim-video-row"><video id="rvVideo" controls playsinline style="display:none"></video><div class="anim-video-side"><div class="row"><a class="btn primary" id="rvJoinDownload" style="display:none" href="#">⬇ Download 1-minute video</a></div><p class="muted small" id="rvJoinNote"></p></div></div>
       </div>
-      <details class="card anim-providers-card"><summary>External video providers</summary><p class="muted small">Configure in Settings → Providers. Runway, Pika, Luma, Kling, Veo — a saved key shows “Key saved — not verified” until Test Connection passes. Copy-ready prompts above are made for pasting into any of them.</p></details>
+      <details class="card anim-providers-card" style="display:none"><summary>External video providers</summary><p class="muted small">Configure in Settings → Providers. Runway, Pika, Luma, Kling, Veo — a saved key shows “Key saved — not verified” until Test Connection passes. Copy-ready prompts above are made for pasting into any of them.</p></details>
     </div>
   </div>
 </section>
@@ -397,6 +414,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="auth.js?v=17"></script>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ let state=load();
 let current=null; // current book being edited
 let reader={book:null,idx:0};
 let storyboard=[];
+let storyStyle='Storybook Illustration';
 function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.projects)return s}catch(e){}return{projects:[],characters:[],history:[],providers:{},theme:'indigo',library:[]};}
 /* v15: generated pictures are BIG — each is a data URL of ~2MB, so a
    4-page book is ~8MB, but localStorage holds only about 5MB. The old
@@ -86,11 +87,13 @@ function lightCopyBook(b){
     q.img='idb:'+b.id;
     return q;
   });
+  if(typeof b.qvCharImg==='string'&&b.qvCharImg.indexOf('data:image/')===0){ imgs['charImg']=b.qvCharImg; c.qvCharImg='idb:'+b.id; }
   if(Object.keys(imgs).length) _imgQueue[b.id]=Object.assign({},_imgQueue[b.id]||{},imgs);
   return c;
 }
 function stripBookImgs(b){
   if(!b) return;
+  if(typeof b.qvCharImg==='string'&&b.qvCharImg.indexOf('idb:')===0) b.qvCharImg='';
   if(b.pages) b.pages.forEach(function(p){ if(isGenImg(p.img)||isIdbMarker(p.img)) p.img=''; });
   if(b.panels) b.panels.forEach(function(p){ if(isGenImg(p.img)||isIdbMarker(p.img)) p.img=''; });
 }
@@ -117,6 +120,7 @@ async function hydrateBook(b){
   if(b.panels) lists.push(b.panels);
   let need=false;
   lists.forEach(function(ps){ ps.forEach(function(p){ if(isIdbMarker(p.img)) need=true; }); });
+  if(typeof b.qvCharImg==='string'&&b.qvCharImg.indexOf('idb:')===0) need=true;
   if(!need) return b;
   let rec=null;
   try{ rec=await idbGet(b.id); }catch(e){ rec=null; }
@@ -129,6 +133,10 @@ async function hydrateBook(b){
       else { try{ p.img=makeSVG(p,b.style||'Storybook Illustration'); }catch(e){ p.img=''; } }
     });
   });
+  if(typeof b.qvCharImg==='string'&&b.qvCharImg.indexOf('idb:')===0){
+    var cv=rec&&rec['charImg'];
+    if(typeof cv==='string'&&cv.indexOf('data:image/')===0) b.qvCharImg=cv; else b.qvCharImg='';
+  }
   return b;
 }
 function hydrateAll(){
@@ -196,7 +204,7 @@ function pickIdea(b){document.getElementById('bkIdea').value=b.textContent;}
 function randomIdea(){document.getElementById('bkIdea').value=IDEAS[Math.floor(Math.random()*IDEAS.length)];}
 function uploadManuscript(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{document.getElementById('bkManuscript').value=r.result;};r.readAsText(f);}
 function useManuscript(){const m=document.getElementById('bkManuscript').value.trim();if(m)document.getElementById('bkIdea').value=m.slice(0,140);}
-function bibleText(){const c=state.characters[0]||{name:document.getElementById('chName').value,kind:document.getElementById('chKind').value,face:document.getElementById('chFace').value,hair:document.getElementById('chHair').value,outfit:document.getElementById('chOutfit').value,colors:document.getElementById('chColors').value,acc:document.getElementById('chAcc').value,expr:document.getElementById('chExpr').value};return c.name+' — '+c.kind+'; face: '+c.face+'; hair/fur: '+c.hair+'; outfit: '+c.outfit+'; colours: '+c.colors+'; accessories: '+c.acc+'; expression: '+c.expr+'. SAME character in every scene — do not change face, hair, outfit or colours.';}
+function bibleText(c){c=c||state.characters[0]||{name:document.getElementById('chName').value,kind:document.getElementById('chKind').value,face:document.getElementById('chFace').value,hair:document.getElementById('chHair').value,outfit:document.getElementById('chOutfit').value,colors:document.getElementById('chColors').value,acc:document.getElementById('chAcc').value,expr:document.getElementById('chExpr').value};return c.name+' — '+c.kind+'; face: '+c.face+'; hair/fur: '+c.hair+'; outfit: '+c.outfit+'; colours: '+c.colors+'; accessories: '+c.acc+'; expression: '+c.expr+'. SAME character in every scene — do not change face, hair, outfit or colours.';}
 function generateBook(){
   const idea=document.getElementById('bkIdea').value.trim()||IDEAS[0];
   const manuscript=document.getElementById('bkManuscript').value.trim();
@@ -420,7 +428,7 @@ async function upgradeStoryboardImages(){
     if(!s.img||isSVGImg(s.img)){
       if(statusEl) statusEl.textContent='Generating scene picture '+(done+1)+' of '+storyboard.length+'… please wait.';
       try{
-        s.img=await fetchGeneratedImage(s.prompt+' — style: Storybook Illustration, children\'s picture book illustration',hash(s.prompt+i)%1000000);
+        s.img=await fetchGeneratedImage(s.prompt+' — style: '+storyStyle+', children\'s picture book illustration',hash(s.prompt+i)%1000000);
         done++;
         const thumbs=document.querySelectorAll('#animOut .scene-thumb-img');
         if(thumbs[i]) thumbs[i].src=s.img;
@@ -486,7 +494,7 @@ function renderHome(){const el=document.getElementById('homeStats');if(el)el.inn
 }
 function renderSimpleHome(){const el=document.getElementById('simpleProjects');if(!el)return;el.innerHTML=state.projects.length?state.projects.map(b=>'<div class="simple-row"><div><strong>'+esc(b.title)+'</strong><br><span class="muted small">'+esc(b.desc||b.kind||'')+'</span></div><button class="btn" onclick="openProject(\''+b.id+'\')">Open</button></div>').join(''):'<p class="muted">No stories yet — tap \u201cCreate a story\u201d above to make your first one.</p>';}
 function renderProjects(){const el=document.getElementById('projectsOut');if(!el)return;el.innerHTML=state.projects.length?state.projects.map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||b.kind||'')+'</p><p class="muted small">'+(b.pages?b.pages.length+' pages · ':(b.chapters?b.chapters.length+' chapters · ':''))+esc(b.type||b.kind||'')+'</p><div class="row"><button class="btn" onclick="openProject(\''+b.id+'\')">Open</button><button class="btn" onclick="duplicateProject(\''+b.id+'\')">Duplicate</button><button class="btn danger" onclick="deleteProject(\''+b.id+'\')">Delete</button></div></div>').join(''):'<p class="muted">No projects yet — create one.</p>';}
-async function openProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;if(b.kind==='story'){openStory(id);}else if(b.kind==='book'||b.pages){await hydrateBook(b);current=b;renderBookOut();renderEditor();go('book');}else if(b.kind==='comic'){hydrateBook(b);go('comic');}else{go('projects');}}
+async function openProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;if(b.kind==='story'){openStory(id);}else if(b.kind==='video'){await hydrateBook(b);openQuickVideoProject(b);}else if(b.kind==='book'||b.pages){await hydrateBook(b);current=b;renderBookOut();renderEditor();go('book');}else if(b.kind==='comic'){hydrateBook(b);go('comic');}else{go('projects');}}
 function duplicateProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;const c=JSON.parse(JSON.stringify(b));c.id=uid();c.title=b.title+' (copy)';
   /* v15: pictures live in IndexedDB under the original's id — copy that
      record to the new id and re-point the copy's markers, so deleting the
@@ -512,8 +520,15 @@ const NEGATIVE='Negative: no extra characters, no extra limbs, no changed face/h
    and Story flows have — one tap fills the idea field with a random
    topic from the same IDEAS list. Default fallback topic unchanged. */
 function randomAnimationIdea(){document.getElementById('anIdea').value=IDEAS[Math.floor(Math.random()*IDEAS.length)];}
-function generateStoryboard(){
-  const idea=document.getElementById('anIdea').value.trim()||'Milo the fox follows a glowing lantern';
+function renderAnimOut(){
+  const out=document.getElementById('animOut');
+  if(!out) return;
+  out.innerHTML=storyboard.map((s,i)=>'<div class="scene-thumb" onclick="toggleSceneDetail('+i+')">'+(s.img?'<img class="scene-thumb-img" src="'+s.img+'" alt="Scene '+s.n+' illustration">':'')+'<div class="scene-thumb-body"><strong>Scene '+s.n+'</strong><p>'+esc(s.narration.slice(0,90))+(s.narration.length>90?'…':'')+'</p></div><div class="scene-detail" id="scene-detail-'+i+'" style="display:none"><p class="small">Entry: <strong>'+esc(s.entry)+'</strong> · Start: '+esc(s.start)+' → End: '+esc(s.end)+' · Exit: '+esc(s.exit)+'</p><p class="small muted">Continuity: '+(i===0?'starts centre':('starts at '+storyboard[i-1].end+' (previous scene end)'))+'</p><p class="mono small">'+esc(s.prompt)+'</p><div class="row"><button class="btn" onclick="event.stopPropagation();copyPrompt('+i+')">📋 Copy prompt</button></div></div></div>').join('');
+}
+function generateStoryboard(ideaArg,bibleArg,styleArg,skipUpgrade){
+  const idea=ideaArg||document.getElementById('anIdea').value.trim()||'Milo the fox follows a glowing lantern';
+  const bible=bibleArg||bibleText();
+  storyStyle=styleArg||'Storybook Illustration';
   const n=Math.max(3,Math.min(8,parseInt(document.getElementById('anScenes').value)||4));
   const sides=['left','right','centre'];
   storyboard=[];let pos='centre';
@@ -523,25 +538,22 @@ function generateStoryboard(){
       entry, start:pos, end:exit, exit,
       camera:CAMERA, negative:NEGATIVE,
       prompt:''};
-    scene.prompt='SCENE '+(i+1)+'/'+n+': '+idea+'. '+bibleText()+' Entry: from the '+entry+', start position '+pos+'. End position: '+exit+', exit to the '+exit+'. Next scene starts at '+exit+'. '+CAMERA+' '+NEGATIVE;
+    scene.prompt='SCENE '+(i+1)+'/'+n+': '+idea+'. '+bible+' Entry: from the '+entry+', start position '+pos+'. End position: '+exit+', exit to the '+exit+'. Next scene starts at '+exit+'. '+CAMERA+' '+NEGATIVE;
     /* v12: every scene gets its REAL illustration — the same makeSVG()
        picture-book illustration, built from this scene's narration +
        the Character Bible + Storybook style — so the storyboard preview
        and the rendered video show the user's character and setting,
        not a flat colour. */
-    scene.img=makeSVG({scene:idea+' — scene '+(i+1)+': '+scene.narration,text:scene.narration},'Storybook Illustration');
+    scene.img=makeSVG({scene:idea+' — scene '+(i+1)+': '+scene.narration,text:scene.narration},storyStyle);
     storyboard.push(scene); pos=exit;
   }
-  /* v13: four SMALL blocks, not big stacked cards — a thumbnail with
-     the scene number + short caption. Tap a block to expand its entry,
-     positions, continuity and copy-ready prompt. */
-  const out=document.getElementById('animOut');
-  out.innerHTML=storyboard.map((s,i)=>'<div class="scene-thumb" onclick="toggleSceneDetail('+i+')">'+(s.img?'<img class="scene-thumb-img" src="'+s.img+'" alt="Scene '+s.n+' illustration">':'')+'<div class="scene-thumb-body"><strong>Scene '+s.n+'</strong><p>'+esc(s.narration.slice(0,90))+(s.narration.length>90?'…':'')+'</p></div><div class="scene-detail" id="scene-detail-'+i+'" style="display:none"><p class="small">Entry: <strong>'+esc(s.entry)+'</strong> · Start: '+esc(s.start)+' → End: '+esc(s.end)+' · Exit: '+esc(s.exit)+'</p><p class="small muted">Continuity: '+(i===0?'starts centre':('starts at '+storyboard[i-1].end+' (previous scene end)'))+'</p><p class="mono small">'+esc(s.prompt)+'</p><div class="row"><button class="btn" onclick="event.stopPropagation();copyPrompt('+i+')">📋 Copy prompt</button></div></div></div>').join('');
+  renderAnimOut();
   logHistory('animation','Storyboard: '+n+' scenes — '+idea);save();
   /* v13: upgrade the scene pictures to the picked image model in the
      background (built-in pictures stay until each realistic one
-     arrives). */
-  upgradeStoryboardImages();
+     arrives). Quick Video passes skipUpgrade and upgrades them fast
+     itself instead. */
+  if(!skipUpgrade) upgradeStoryboardImages();
   prefillRvLines();
   /* v17: a new storyboard replaces the old real-video clips. */
   if(!rvBusy){
@@ -611,7 +623,7 @@ function wrapCaptionText(ctx,text,maxW){
    recorder AND the no-recorder moving preview, so both always show
    the same pictures. If the picture failed to load, a coloured
    backdrop + the same caption is drawn — never a blank/black frame. */
-function drawSceneFrame(ctx,img,s,idx,t,per,W,H){
+function drawSceneFrame(ctx,img,s,idx,t,per,W,H,prevImg){
   ctx.save();
   ctx.fillStyle='#081a43'; ctx.fillRect(0,0,W,H);
   if(img&&img.complete&&img.naturalWidth){
@@ -628,6 +640,20 @@ function drawSceneFrame(ctx,img,s,idx,t,per,W,H){
     ctx.strokeStyle='#1e1b2e'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(W/2,H*0.42,40,0.2,Math.PI-0.2); ctx.stroke();
   }
   ctx.restore();
+  /* v24: crossfade from the previous scene across the first 12% of
+     this scene, so cuts never jump — then the moving character
+     walks/talks/dances on top of the picture. */
+  if(prevImg&&prevImg.complete&&prevImg.naturalWidth){
+    var localF=Math.min(1,Math.max(0,(t-idx*per)/per));
+    if(localF<0.12){
+      ctx.save(); ctx.globalAlpha=1-localF/0.12;
+      var psc=Math.max(W/prevImg.naturalWidth,H/prevImg.naturalHeight);
+      var pdw=prevImg.naturalWidth*psc, pdh=prevImg.naturalHeight*psc;
+      ctx.drawImage(prevImg,(W-pdw)/2,(H-pdh)/2,pdw,pdh);
+      ctx.restore();
+    }
+  }
+  drawQVCharacter(ctx,s,idx,t,per,W,H);
   /* Scene badge, top-left */
   const badge='SCENE '+(idx+1)+' / '+storyboard.length;
   ctx.font='bold '+Math.max(20,Math.round(W*0.022))+'px sans-serif';
@@ -676,7 +702,7 @@ function previewLoop(){
   const t=previewBaseT+(performance.now()-previewT0)/1000;
   const loopT=t%previewDur;
   const idx=Math.min(storyboard.length-1,Math.floor(loopT/previewPer));
-  drawSceneFrame(previewCtx,previewImgs[idx],storyboard[idx],idx,loopT,previewPer,previewW,previewH);
+  drawSceneFrame(previewCtx,previewImgs[idx],storyboard[idx],idx,loopT,previewPer,previewW,previewH,idx>0?previewImgs[idx-1]:null);
   previewRAF=requestAnimationFrame(previewLoop);
 }
 function togglePreview(){
@@ -718,7 +744,7 @@ function startPreviewFallback(reason){
   if(pb) pb.style.display='inline-block';
   if(db) db.style.display='inline-block';
   if(status) status.textContent='Moving preview playing below — your scene pictures with zoom/pan and captions.';
-  if(err) err.textContent=reason+' This browser cannot record a video file in the page, so there is no .webm download here. What still works: the moving preview below, Download scene pictures, and the copy-ready prompts for Runway / Pika / Luma in Settings → Providers.';
+  if(err) err.textContent=reason+' This browser cannot record a video file in the page, so there is no .webm download here. What still works: the moving preview below and Download scene pictures.';
   if(note) note.textContent='Preview mode: this browser cannot record video in-page (Safari on iPhone does not support MediaRecorder). Try Chrome or Edge on a desktop for a downloadable .webm file.';
   const imgsReady=Promise.all(previewImgs.map(function(im){return im.complete?Promise.resolve():new Promise(function(res){im.onload=res;im.onerror=res;});}));
   Promise.race([imgsReady,new Promise(function(res){setTimeout(res,1500);})]).then(function(){
@@ -808,7 +834,7 @@ function renderVideo(){
     if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';}
     if(cancelBtn) cancelBtn.style.display='none';
     if(wasPreview) return; /* a preview fallback already took over the status text */
-    if(!chunks.length||cancelRender){ if(status)status.textContent=cancelRender?'Render cancelled — tap Render again to try again.':'No video data was recorded — tap Render again, or try Chrome on a desktop.'; if(bar)bar.style.width='0%'; return; }
+    if(!chunks.length||cancelRender){ if(status)status.textContent=cancelRender?'Render cancelled — tap Render again to try again.':'No video data was recorded — tap Render again, or try Chrome on a desktop.'; if(bar)bar.style.width='0%'; if(typeof qvRenderDone==='function'){var qf=qvRenderDone;qvRenderDone=null;try{qf(false);}catch(e){}} return; }
     const blob=new Blob(chunks,{type:mime||'video/webm'}); const url=URL.createObjectURL(blob); lastVideoUrl=url;
     /* v13: the live preview canvas is replaced by the finished video
        player, so the Animation page keeps fitting one screen. */
@@ -824,6 +850,7 @@ function renderVideo(){
        failure. */
     try{const a=document.createElement('a');a.href=url;a.download='vitalize-storynest-video-'+dur+'s.'+actualExt;document.body.appendChild(a);a.click();a.remove();}catch(e){}
     logHistory('video','Rendered '+dur+'s video '+ratio+' '+q); save();
+    if(typeof qvRenderDone==='function'){var qf2=qvRenderDone;qvRenderDone=null;try{qf2(true);}catch(e){}}
   };
   const per=dur/storyboard.length; let start=performance.now();
   const sceneImgs=loadSceneImages();
@@ -838,7 +865,7 @@ function renderVideo(){
       const t=(performance.now()-start)/1000;
       if(cancelRender||t>=dur){ clearInterval(renderTimer); renderTimer=null; try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} return; }
       const idx=Math.min(storyboard.length-1,Math.floor(t/per));
-      drawSceneFrame(ctx,sceneImgs[idx],storyboard[idx],idx,t,per,W,H);
+      drawSceneFrame(ctx,sceneImgs[idx],storyboard[idx],idx,t,per,W,H,idx>0?sceneImgs[idx-1]:null);
       const done=Math.floor(t);
       if(status) status.textContent='Rendering… '+done+'s / '+dur+'s · Scene '+(idx+1)+'/'+storyboard.length+' — keep this tab open';
       if(bar) bar.style.width=Math.round(t/dur*100)+'%';
@@ -1279,6 +1306,310 @@ async function generateComicPanelVideo(i){
   }
 }
 
+/* ---------- Quick Video — in-site video (v24) ----------
+   The site makes its own videos now — no other app, no video
+   service, no key, no cost. How it works:
+   1. The user gives only a title, a topic and a wish-list, picks a
+      character (upload or a sample) and a style picture. The
+      storyboard is built in this page from those inputs, with one
+      spoken line per scene and the Character Bible for continuity.
+   2. Scene pictures come from the site's own image endpoint, fired
+      all at once — the shared slot paces each start ~4s apart, so
+      they overlap and finish fast. A scene that cannot be generated
+      keeps its built-in picture; a video never fails for a picture.
+      For Quick Video the pictures are BACKGROUNDS (no character in
+      them) — the character below is the actor, so it can really move.
+   3. The built-in renderer (canvas + MediaRecorder, 30fps) draws
+      each scene, crossfades between scenes, and draws the character
+      on top as moving parts: arms and legs swing, the mouth opens
+      and closes on the dialogue beats. The finished video previews
+      and downloads from the Animation Studio, and the project is
+      saved to My Projects and the Library (pictures in IndexedDB,
+      same as books).
+   The old external-video mode is hidden from the UI; its code stays
+   in this file and api/generate-video.js stays in the repo, dormant. */
+var QV_STYLES=['3D Cartoon','Anime','Pixar-inspired 3D','Watercolor','Storybook Illustration','Disney-inspired Fairy Tale','Clay Animation','Paper Cut','Hand Drawn','Digital Painting'];
+var QV_ANIMS=[{id:'talk',label:'Talk & smile'},{id:'wave',label:'Wave hello'},{id:'walk',label:'Walk'},{id:'run',label:'Run'},{id:'dance',label:'Dance'},{id:'jump',label:'Jump for joy'}];
+var qvStyle='3D Cartoon', qvAnim='talk', qvCharId='boy', qvCharImg=null, qvCharOn=false, qvTitle='', qvBusy=false, qvCancel=false, qvRenderDone=null;
+var qvPartCache={}, qvCharImgEl=null;
+/* Sample characters — multi-part SVGs on a 200x300 stage, so the
+   renderer can swing each limb and the mouth separately. Every part
+   is drawn in the same 200x300 space, so the parts always line up. */
+var QV_CHARS={
+boy:{name:'Max',kind:'Boy hero',face:'big brown eyes, blush cheeks',hair:'messy black hair',outfit:'yellow top and navy shorts',colors:'yellow, navy, purple',
+ parts:{
+  legL:'<rect x="79" y="206" width="20" height="70" rx="10" fill="#1e3a5f"/><ellipse cx="89" cy="282" rx="15" ry="8" fill="#6d28d9"/>',
+  legR:'<rect x="101" y="206" width="20" height="70" rx="10" fill="#1e3a5f"/><ellipse cx="111" cy="282" rx="15" ry="8" fill="#6d28d9"/>',
+  body:'<path d="M66 128 Q100 116 134 128 L140 204 Q100 216 60 204 Z" fill="#f59e0b"/><circle cx="100" cy="128" r="7" fill="#fbbf24"/>',
+  armL:'<rect x="56" y="130" width="17" height="58" rx="8" fill="#f59e0b"/><circle cx="64" cy="192" r="10" fill="#fcd9b8"/>',
+  armR:'<rect x="127" y="130" width="17" height="58" rx="8" fill="#f59e0b"/><circle cx="136" cy="192" r="10" fill="#fcd9b8"/>',
+  head:'<circle cx="100" cy="80" r="42" fill="#fcd9b8"/><path d="M58 78 Q54 30 100 28 Q146 30 142 78 Q136 52 122 56 Q126 40 100 42 Q74 40 78 56 Q64 52 58 78 Z" fill="#1e1b2e"/><path d="M72 40 L78 24 L86 40 Z M96 34 L102 18 L110 36 Z M118 40 L126 26 L132 44 Z" fill="#1e1b2e"/><circle cx="84" cy="80" r="7" fill="#5b3a1a"/><circle cx="116" cy="80" r="7" fill="#5b3a1a"/><circle cx="86" cy="78" r="2.5" fill="#fff"/><circle cx="118" cy="78" r="2.5" fill="#fff"/><circle cx="72" cy="96" r="7" fill="#fda4af" opacity="0.8"/><circle cx="128" cy="96" r="7" fill="#fda4af" opacity="0.8"/>',
+  mouthClosed:'<path d="M88 104 Q100 113 112 104" stroke="#7f1d1d" stroke-width="4" fill="none" stroke-linecap="round"/>',
+  mouthOpen:'<ellipse cx="100" cy="107" rx="9" ry="11" fill="#7f1d1d"/><ellipse cx="100" cy="111" rx="5" ry="4" fill="#f87171"/>'
+ },
+ pivots:{armL:[64,134],armR:[136,134],legL:[89,210],legR:[111,210],head:[100,80]}},
+girl:{name:'Lily',kind:'Girl hero',face:'big brown eyes, round black glasses, blush cheeks',hair:'long dark wavy hair, purple beanie with a pom-pom',outfit:'pink dress',colors:'pink, purple, gold',
+ parts:{
+  legL:'<rect x="82" y="206" width="15" height="62" rx="7" fill="#fcd9b8"/><ellipse cx="89" cy="274" rx="12" ry="7" fill="#db2777"/>',
+  legR:'<rect x="103" y="206" width="15" height="62" rx="7" fill="#fcd9b8"/><ellipse cx="111" cy="274" rx="12" ry="7" fill="#db2777"/>',
+  body:'<path d="M70 126 L130 126 L144 206 Q100 218 56 206 Z" fill="#ec4899"/><circle cx="100" cy="140" r="6" fill="#fbcfe8"/>',
+  armL:'<rect x="58" y="130" width="16" height="56" rx="8" fill="#ec4899"/><circle cx="66" cy="190" r="10" fill="#fcd9b8"/>',
+  armR:'<rect x="126" y="130" width="16" height="56" rx="8" fill="#ec4899"/><circle cx="134" cy="190" r="10" fill="#fcd9b8"/>',
+  head:'<path d="M56 66 Q50 140 62 158 L138 158 Q150 140 144 66 Q142 28 100 28 Q58 28 56 66 Z" fill="#312e81"/><circle cx="100" cy="80" r="42" fill="#fcd9b8"/><path d="M60 64 Q58 24 100 22 Q142 24 140 64 Q132 44 100 44 Q68 44 60 64 Z" fill="#6d28d9"/><circle cx="100" cy="20" r="10" fill="#fbbf24"/><circle cx="84" cy="80" r="14" fill="none" stroke="#111827" stroke-width="3"/><circle cx="116" cy="80" r="14" fill="none" stroke="#111827" stroke-width="3"/><path d="M98 80 L102 80" stroke="#111827" stroke-width="3"/><circle cx="84" cy="80" r="6" fill="#5b3a1a"/><circle cx="116" cy="80" r="6" fill="#5b3a1a"/><circle cx="72" cy="96" r="7" fill="#fda4af" opacity="0.8"/><circle cx="128" cy="96" r="7" fill="#fda4af" opacity="0.8"/>',
+  mouthClosed:'<path d="M88 104 Q100 113 112 104" stroke="#7f1d1d" stroke-width="4" fill="none" stroke-linecap="round"/>',
+  mouthOpen:'<ellipse cx="100" cy="107" rx="9" ry="11" fill="#7f1d1d"/><ellipse cx="100" cy="111" rx="5" ry="4" fill="#f87171"/>'
+ },
+ pivots:{armL:[66,134],armR:[134,134],legL:[89,210],legR:[111,210],head:[100,80]}},
+puppy:{name:'Pip',kind:'Puppy friend',face:'big dark eyes, brown nose, floppy ears',hair:'tan fur with a cream belly',outfit:'a red collar',colors:'tan, cream, red',
+ parts:{
+  tail:'<path d="M142 190 Q168 172 162 140" stroke="#b45309" stroke-width="14" fill="none" stroke-linecap="round"/>',
+  legL:'<ellipse cx="66" cy="266" rx="15" ry="9" fill="#b45309"/>',
+  legR:'<ellipse cx="134" cy="266" rx="15" ry="9" fill="#b45309"/>',
+  body:'<ellipse cx="100" cy="200" rx="46" ry="62" fill="#d97706"/><ellipse cx="100" cy="212" rx="26" ry="34" fill="#fde68a"/><circle cx="100" cy="152" r="7" fill="#dc2626"/>',
+  armL:'<rect x="76" y="208" width="16" height="62" rx="8" fill="#d97706"/><ellipse cx="84" cy="274" rx="11" ry="7" fill="#92400e"/>',
+  armR:'<rect x="108" y="208" width="16" height="62" rx="8" fill="#d97706"/><ellipse cx="116" cy="274" rx="11" ry="7" fill="#92400e"/>',
+  head:'<ellipse cx="58" cy="88" rx="14" ry="30" fill="#92400e" transform="rotate(15 58 88)"/><ellipse cx="142" cy="88" rx="14" ry="30" fill="#92400e" transform="rotate(-15 142 88)"/><circle cx="100" cy="82" r="44" fill="#d97706"/><ellipse cx="100" cy="98" rx="20" ry="13" fill="#fde68a"/><ellipse cx="100" cy="92" rx="7" ry="5" fill="#1e1b2e"/><circle cx="82" cy="74" r="6" fill="#1e1b2e"/><circle cx="118" cy="74" r="6" fill="#1e1b2e"/><circle cx="84" cy="72" r="2" fill="#fff"/><circle cx="120" cy="72" r="2" fill="#fff"/>',
+  mouthClosed:'<path d="M92 106 Q100 112 108 106" stroke="#1e1b2e" stroke-width="3.5" fill="none" stroke-linecap="round"/>',
+  mouthOpen:'<ellipse cx="100" cy="110" rx="8" ry="9" fill="#7f1d1d"/><ellipse cx="100" cy="113" rx="4.5" ry="3.5" fill="#f87171"/>'
+ },
+ pivots:{armL:[84,214],armR:[116,214],legL:[66,268],legR:[134,268],head:[100,82],tail:[142,190]}}
+};
+var QV_PART_ORDER=['tail','legL','legR','body','armL','armR','head'];
+function qvPartImg(charId,part){
+  var key=charId+':'+part;
+  if(qvPartCache[key]) return qvPartCache[key];
+  var c=QV_CHARS[charId];
+  if(!c||!c.parts[part]) return null;
+  var im=new Image();
+  im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300">'+c.parts[part]+'</svg>');
+  qvPartCache[key]=im;
+  return im;
+}
+function qvCharSVG(id){
+  var c=QV_CHARS[id]; if(!c) return '';
+  var inner=QV_PART_ORDER.map(function(p){return c.parts[p]||'';}).join('')+(c.parts.mouthClosed||'');
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><rect width="200" height="300" fill="#f8fafc"/>'+inner+'</svg>');
+}
+function renderQVPickers(){
+  var cs=document.getElementById('qvChars');
+  if(cs) cs.innerHTML=Object.keys(QV_CHARS).map(function(id){
+    var c=QV_CHARS[id];
+    return '<button type="button" class="qv-char'+(qvCharId===id&&qvCharOn?' sel':'')+'" onclick="qvSetChar(\''+id+'\')"><img src="'+qvCharSVG(id)+'" alt="'+esc(c.name)+'"><span>'+esc(c.name)+'</span><small>'+esc(c.kind)+'</small></button>';
+  }).join('');
+  var ss=document.getElementById('qvStyles');
+  if(ss) ss.innerHTML=QV_STYLES.map(function(st){
+    return '<button type="button" class="qv-style'+(qvStyle===st?' sel':'')+'" onclick="qvSetStyle(\''+esc(st)+'\')"><img src="'+makeSVG({scene:'A brave little hero in a magical forest',text:''},st)+'" alt="'+esc(st)+'"><span>'+esc(st)+'</span></button>';
+  }).join('');
+}
+function qvSetStyle(st){ qvStyle=st; renderQVPickers(); }
+function qvSetChar(id){
+  qvCharId=id; qvCharOn=true; qvCharImg=null; qvCharImgEl=null;
+  var fi=document.getElementById('qvCharFile'); if(fi) fi.value='';
+  var pv=document.getElementById('qvCharPreview'); if(pv) pv.style.display='none';
+  var nm=document.getElementById('qvCharName'); if(nm) nm.textContent='Using sample: '+((QV_CHARS[id]||{}).name||id)+'. Upload a picture above to use your own character instead.';
+  renderQVPickers();
+}
+function qvCharFileChanged(input){
+  var f=input&&input.files&&input.files[0]; if(!f) return;
+  if(f.size>5*1024*1024){ alert('That picture is over 5MB — pick a smaller one.'); input.value=''; return; }
+  var r=new FileReader();
+  r.onload=function(){
+    qvCharImg=String(r.result||''); qvCharId='upload'; qvCharOn=true; qvCharImgEl=null;
+    var pv=document.getElementById('qvCharPreview'); if(pv){ pv.src=qvCharImg; pv.style.display='block'; }
+    var nm=document.getElementById('qvCharName'); if(nm) nm.textContent='Using your upload: '+f.name;
+    renderQVPickers();
+  };
+  r.readAsDataURL(f);
+}
+function qvBibleText(){
+  if(qvCharId==='upload') return {name:'the uploaded hero',kind:'the character in the uploaded picture',face:'the same face as in the uploaded picture',hair:'the same hair as in the uploaded picture',outfit:'the same outfit as in the uploaded picture',colors:'the same colours as in the uploaded picture',acc:'',expr:'happy and brave'};
+  var c=QV_CHARS[qvCharId]||QV_CHARS.boy;
+  return {name:c.name,kind:c.kind,face:c.face,hair:c.hair,outfit:c.outfit,colors:c.colors,acc:'',expr:'happy and brave'};
+}
+function drawQVPart(ctx,img,ox,oy,cw,ch,piv,ang){
+  if(!img||!img.complete||!img.naturalWidth) return;
+  var px=ox+piv[0]/200*cw, py=oy+piv[1]/300*ch;
+  ctx.save(); ctx.translate(px,py); ctx.rotate(ang||0);
+  ctx.drawImage(img,ox-px,oy-py,cw,ch); ctx.restore();
+}
+function drawQVCharacter(ctx,s,idx,t,per,W,H){
+  if(!qvCharOn) return;
+  /* The actor only plays on background scenes (Quick Video) or
+     built-in pictures — a generated scene picture already has its
+     own character in it, and two characters would overlap. */
+  var bgOnly=(s&&s.qvBg===true)||isSVGImg(s&&s.img);
+  if(!bgOnly) return;
+  var lt=Math.max(0,t-idx*per), frac=per?Math.min(1,lt/per):0;
+  var posX={left:0.24,centre:0.5,right:0.76};
+  var x0=posX[s.start]||0.5, x1=posX[s.end]||0.5;
+  var fx=x0+(x1-x0)*frac;
+  var chH=H*0.52, chW=chH*200/300;
+  var cx=fx*W, feetY=H*0.80;
+  var w1=2*Math.PI, ph=t;
+  var legA=0,armLA=0,armRA=0,headA=0,bob=0,lean=0,jumpY=0,tailA=0,sw=0;
+  if(qvAnim==='walk'){ sw=Math.sin(ph*w1*1.4); legA=sw*0.45; armLA=-sw*0.4; armRA=sw*0.4; bob=Math.abs(sw)*6; }
+  else if(qvAnim==='run'){ sw=Math.sin(ph*w1*2.6); legA=sw*0.7; armLA=-sw*0.6; armRA=sw*0.6; bob=Math.abs(sw)*8; lean=0.1; }
+  else if(qvAnim==='wave'){ armRA=-2.1+Math.sin(ph*w1*2.2)*0.35; armLA=0.08; headA=0.06; }
+  else if(qvAnim==='dance'){ sw=Math.sin(ph*w1*2); bob=Math.abs(sw)*10; armLA=-1.1+sw*0.35; armRA=-1.1-sw*0.35; lean=sw*0.07; }
+  else if(qvAnim==='jump'){ jumpY=-Math.abs(Math.sin(frac*Math.PI*2))*H*0.07; armLA=-2.4; armRA=-2.4; }
+  else { armLA=Math.sin(ph*w1*0.8)*0.08; armRA=-Math.sin(ph*w1*0.8)*0.08; bob=Math.sin(ph*w1*0.9)*3; headA=Math.sin(ph*w1*0.6)*0.05; }
+  tailA=Math.sin(ph*w1*3)*0.3;
+  if(qvCharImg){
+    if(!qvCharImgEl){ qvCharImgEl=new Image(); qvCharImgEl.src=qvCharImg; }
+    var im=qvCharImgEl;
+    if(im.complete&&im.naturalWidth){
+      var iw=im.naturalWidth, ih=im.naturalHeight, sc=Math.min(chW/iw,chH/ih), dw=iw*sc, dh=ih*sc;
+      ctx.save(); ctx.translate(cx,feetY-dh/2-bob-jumpY); ctx.rotate(lean+Math.sin(ph*w1*0.8)*0.03);
+      ctx.drawImage(im,-dw/2,-dh/2,dw,dh); ctx.restore();
+    }
+    return;
+  }
+  var c=QV_CHARS[qvCharId]||QV_CHARS.boy;
+  var ox=cx-chW/2, oy=feetY-chH-bob-jumpY;
+  ctx.save();
+  ctx.translate(cx,feetY); ctx.rotate(lean); ctx.translate(-cx,-feetY);
+  drawQVPart(ctx,qvPartImg(qvCharId,'tail'),ox,oy,chW,chH,c.pivots.tail||[142,190],tailA);
+  drawQVPart(ctx,qvPartImg(qvCharId,'legL'),ox,oy,chW,chH,c.pivots.legL,legA);
+  drawQVPart(ctx,qvPartImg(qvCharId,'legR'),ox,oy,chW,chH,c.pivots.legR,-legA);
+  drawQVPart(ctx,qvPartImg(qvCharId,'body'),ox,oy,chW,chH,[100,165],0);
+  drawQVPart(ctx,qvPartImg(qvCharId,'armL'),ox,oy,chW,chH,c.pivots.armL,armLA);
+  drawQVPart(ctx,qvPartImg(qvCharId,'armR'),ox,oy,chW,chH,c.pivots.armR,armRA);
+  drawQVPart(ctx,qvPartImg(qvCharId,'head'),ox,oy,chW,chH,c.pivots.head,headA);
+  /* Mouth: opens and closes on the dialogue beats while the scene's
+     line is being spoken (first 80% of the scene). */
+  var speaking=!!(s&&s.dialogue)&&lt<per*0.8;
+  var openAmt=speaking?(Math.sin(ph*w1*3.2)>0.1?0.75+0.25*Math.sin(ph*w1*3.2):0.15):0;
+  var mouthImg=openAmt>0.3?qvPartImg(qvCharId,'mouthOpen'):qvPartImg(qvCharId,'mouthClosed');
+  if(mouthImg&&mouthImg.complete&&mouthImg.naturalWidth){
+    var mx=ox+100/200*chW, my=oy+107/300*chH;
+    ctx.save(); ctx.translate(mx,my); ctx.scale(1,openAmt>0.3?0.6+0.4*openAmt:1);
+    ctx.drawImage(mouthImg,ox-mx,oy-my,chW,chH); ctx.restore();
+  }
+  ctx.restore();
+}
+/* Scene pictures, FAST: all requests fire at once. The shared slot
+   paces each start ~4s apart (the image endpoint needs a gap), so
+   the generations overlap instead of queueing one by one — 4 scenes
+   finish in roughly the time of one slow picture plus the pacing,
+   not four in a row. A failed scene keeps its built-in picture. */
+async function upgradeStoryboardImagesFast(onProg){
+  var jobs=storyboard.map(function(s,i){
+    if(s.img&&!isSVGImg(s.img)) return Promise.resolve('kept');
+    var prompt;
+    if(s.qvBg){
+      /* Background only — the character is the actor on top, so the
+         picture must not draw its own character. */
+      prompt=(s.narration||'')+' — empty storybook background scene, no characters, no people, no animals — style: '+storyStyle+', children\'s picture book illustration, soft light, gentle colours';
+    }else{
+      prompt=s.prompt+' — style: '+storyStyle+', children\'s picture book illustration';
+    }
+    return fetchGeneratedImage(prompt,hash(s.prompt+i)%1000000).then(function(img){
+      s.img=img;
+      var th=document.querySelectorAll('#animOut .scene-thumb-img');
+      if(th[i]) th[i].src=img;
+      return 'done';
+    }).catch(function(){ return 'kept'; });
+  });
+  var done=0;
+  await Promise.all(jobs.map(function(p){ return p.then(function(){ done++; if(onProg) onProg(done,jobs.length); }); }));
+  save();
+}
+function qvFinish(ok,msg){
+  qvBusy=false;
+  var btn=document.getElementById('qvBtn'); if(btn){btn.disabled=false;btn.textContent='▶ Make my video';}
+  var cb=document.getElementById('qvCancel'); if(cb) cb.style.display='none';
+  var st=document.getElementById('qvStatus');
+  if(st) st.textContent=msg||(ok?'Done — watch the video below and tap Download. It is saved in My Projects and the Library.':'');
+  var bar=document.getElementById('qvProgress'); if(bar) bar.style.width=ok?'100%':'0%';
+}
+function cancelQuickVideo(){
+  qvCancel=true;
+  var st=document.getElementById('qvStatus'); if(st) st.textContent='Cancelling…';
+  cancelVideoRender();
+  if(!rendering) qvFinish(false,'Cancelled — tap Make my video to try again.');
+}
+async function buildQuickVideo(){
+  if(qvBusy) return;
+  if(rendering){ alert('A video is already rendering — wait for it to finish, or tap Cancel on it first.'); return; }
+  var title=(document.getElementById('qvTitle').value||'').trim();
+  var topic=(document.getElementById('qvTopic').value||'').trim()||'A brave little hero finds a magical surprise';
+  var wishes=(document.getElementById('qvWishes').value||'').trim();
+  var n=Math.max(3,Math.min(6,parseInt(document.getElementById('qvScenes').value)||4));
+  qvTitle=title||topic;
+  qvAnim=(document.getElementById('qvAnimSel').value)||'talk';
+  qvCharOn=true;
+  if(qvCharId!=='upload'&&!QV_CHARS[qvCharId]) qvCharId='boy';
+  qvBusy=true; qvCancel=false;
+  var btn=document.getElementById('qvBtn'), st=document.getElementById('qvStatus'),
+      bar=document.getElementById('qvProgress'), cb=document.getElementById('qvCancel');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Making your video…';}
+  if(cb) cb.style.display='inline-block';
+  if(bar) bar.style.width='5%';
+  try{
+    var idea=topic+(wishes?' — '+wishes.split('\n').join('; '):'');
+    document.getElementById('anIdea').value=idea;
+    document.getElementById('anScenes').value=n;
+    /* Build the storyboard in this page — no prompt to approve, the
+       video goes direct. Pictures upgrade fast below, in parallel. */
+    generateStoryboard(idea,qvBibleText(),qvStyle,true);
+    var wishLines=wishes.split('\n').map(function(x){return x.trim();}).filter(Boolean);
+    storyboard.forEach(function(s,i){
+      s.qvBg=true;
+      var line=wishLines[i]||'';
+      if(!line){
+        var first=(s.narration||'').split('.')[0].trim();
+        line=first?first+'.':'Let\'s go!';
+      }
+      s.dialogue=line.slice(0,80);
+    });
+    if(st) st.textContent='Making the scene pictures… (fast — they generate together)';
+    await upgradeStoryboardImagesFast(function(done,total){
+      if(st) st.textContent='Scene picture '+done+' of '+total+' ready…';
+      if(bar) bar.style.width=Math.round(5+done/total*45)+'%';
+    });
+    if(qvCancel) throw new Error('cancelled');
+    saveQuickVideoProject(title,topic,wishes);
+    if(st) st.textContent='Pictures ready — rendering your video below… (1 minute takes a full minute — keep this tab open)';
+    if(bar) bar.style.width='55%';
+    /* Direct to video — no approval step. */
+    qvRenderDone=function(ok){ qvFinish(ok); };
+    renderVideo();
+    if(previewFallback){
+      qvRenderDone=null;
+      qvFinish(true,'Moving preview playing below — this browser cannot record a video file, so there is no download here. The project is saved in My Projects and the Library.');
+    }
+  }catch(e){
+    if(e&&e.message==='cancelled'){ qvFinish(false,'Cancelled — tap Make my video to try again.'); }
+    else { qvFinish(false,'Something went wrong — the storyboard below is still there; tap Make my video again.'); }
+  }
+}
+function saveQuickVideoProject(title,topic,wishes){
+  if(!storyboard.length) return;
+  var proj={id:uid(),kind:'video',title:qvTitle||title,topic:topic,wishes:wishes,desc:topic+' · Quick Video · '+qvStyle+' · '+qvAnim,created:new Date().toISOString(),type:'video',lang:'en',style:qvStyle,anim:qvAnim,charChoice:qvCharId,qvCharImg:qvCharImg||'',pages:storyboard.map(function(s){return {n:s.n,text:s.narration,dialogue:s.dialogue||'',img:s.img,qvBg:true};})};
+  state.projects.unshift(proj);
+  if(!state.library.find(function(b){return b.id===proj.id;})) state.library.unshift(proj);
+  logHistory('video','Quick Video saved: '+proj.title+' ('+storyboard.length+' scenes)');
+  save();
+  renderProjects(); renderSimpleHome(); renderLibrary();
+}
+function openQuickVideoProject(b){
+  storyboard=(b.pages||[]).map(function(p){
+    return {n:p.n,narration:p.text||'',dialogue:p.dialogue||'',img:p.img||'',qvBg:!!p.qvBg,entry:'centre',start:'centre',end:'centre',exit:'centre',camera:CAMERA,negative:NEGATIVE,prompt:''};
+  });
+  qvTitle=b.title||''; qvStyle=b.style||'3D Cartoon'; qvAnim=b.anim||'talk';
+  qvCharId=b.charChoice||'boy'; qvCharImg=b.qvCharImg||null; qvCharOn=true;
+  var t=document.getElementById('qvTitle'); if(t) t.value=b.title||'';
+  var tp=document.getElementById('qvTopic'); if(tp) tp.value=b.topic||'';
+  var w=document.getElementById('qvWishes'); if(w) w.value=b.wishes||'';
+  var as=document.getElementById('qvAnimSel'); if(as) as.value=qvAnim;
+  var nm=document.getElementById('qvCharName');
+  if(nm) nm.textContent=qvCharId==='upload'?'Using your uploaded character.':'No upload yet — a sample below is used.';
+  var pv=document.getElementById('qvCharPreview');
+  if(pv){ if(qvCharImg){pv.src=qvCharImg;pv.style.display='block';} else pv.style.display='none'; }
+  renderQVPickers(); renderAnimOut(); go('animation');
+}
+renderQVPickers();
+
 /* ---------- Music / Comic ---------- */
 function generateSong(){
   const topic=document.getElementById('muTopic').value, lang=document.getElementById('muLang').value, genre=document.getElementById('muGenre').value;
@@ -1296,7 +1627,7 @@ function generateComic(){
   const comic={id:uid(),kind:'comic',title:idea,desc:layout+' · '+n+' panels',created:new Date().toISOString(),panels};
   lastComicPanels=panels;
   state.projects.unshift(comic);
-  document.getElementById('comicOut').innerHTML='<div class="page-grid">'+panels.map((p,i)=>'<div class="page-card"><img id="comic-panel-img-'+i+'" src="'+p.img+'" alt="Comic panel"><div class="pad"><strong>Panel '+p.n+'</strong><p>'+esc(p.text)+'</p><p><strong>'+esc(p.dialogue)+'</strong></p><div class="row"><button class="btn" onclick="generateComicPanelVideo('+i+')">🎥 Real video (8s)</button></div><div id="comic-panel-video-'+i+'"></div></div></div>').join('')+'</div>';
+  document.getElementById('comicOut').innerHTML='<div class="page-grid">'+panels.map((p,i)=>'<div class="page-card"><img id="comic-panel-img-'+i+'" src="'+p.img+'" alt="Comic panel"><div class="pad"><strong>Panel '+p.n+'</strong><p>'+esc(p.text)+'</p><p><strong>'+esc(p.dialogue)+'</strong></p><div id="comic-panel-video-'+i+'"></div></div></div>').join('')+'</div>';
   logHistory('comic','Generated comic: '+idea+' ('+n+' panels)');save();
   /* v13: upgrade the panels to the picked image model in the
      background (built-in pictures stay until each realistic one

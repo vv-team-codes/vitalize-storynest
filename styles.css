@@ -460,3 +460,24 @@ body.auth-pending::after{content:"ekiddy.com";position:fixed;inset:0;display:fle
   body:not(.signed-in) .top-right{order:1;margin-left:0}
   body:not(.signed-in) #nav.open{top:calc(100% + 8px)}
 }
+
+/* ---- v24: Quick Video ---- */
+.qv-card h3{margin:0 0 4px}
+.qv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+.qv-grid label,.qv-card>label{display:block;font-weight:600;font-size:13px}
+.qv-grid input,.qv-card textarea{width:100%;margin-top:4px}
+.qv-card h4{margin:12px 0 6px;font-size:14px}
+.qv-chars{display:flex;gap:10px;flex-wrap:wrap}
+.qv-char{border:2px solid var(--border);border-radius:14px;background:#fff;padding:6px;cursor:pointer;width:96px;text-align:center}
+.qv-char img{width:100%;height:110px;object-fit:contain;display:block}
+.qv-char span{display:block;font-weight:700;font-size:13px}
+.qv-char small{color:var(--muted);font-size:11px}
+.qv-char.sel{border-color:#6d28d9;box-shadow:0 0 0 3px rgba(109,40,217,.25)}
+.qv-styles{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
+.qv-style{border:2px solid var(--border);border-radius:12px;background:#fff;padding:4px;cursor:pointer;text-align:center}
+.qv-style img{width:100%;height:64px;object-fit:cover;border-radius:8px;display:block}
+.qv-style span{display:block;font-size:12px;font-weight:600;padding:4px 2px}
+.qv-style.sel{border-color:#6d28d9;box-shadow:0 0 0 3px rgba(109,40,217,.25)}
+.qv-anim-row{margin-top:10px}
+body.dark .qv-char,body.dark .qv-style{background:#1e1b4b;border-color:#312e81}
+@media(max-width:640px){.qv-grid{grid-template-columns:1fr}}
