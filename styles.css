@@ -48,7 +48,34 @@ footer{text-align:center;color:var(--muted);padding:24px;font-size:13px}
 .hero-art img{width:100%;border-radius:20px}
 .book-page{border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px 0}
 .book-page img{width:100%;border-radius:10px}
-@media(max-width:700px){.hero{grid-template-columns:1fr}.hero h1{font-size:32px}}
+.menu-btn{display:none;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);color:#fff;font-size:22px;line-height:1;padding:8px 12px;border-radius:12px;cursor:pointer}
+.install-btn{background:#fff;color:#0f766e;border:none;font-weight:700}
+#bottomnav{display:none}
+.card{transition:transform .15s ease,box-shadow .15s ease}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,118,110,.14)}
+.btn{min-height:44px}
+input,select,textarea{font-size:16px}
+#nav button{min-height:40px}
+@media(max-width:860px){
+  .topbar{padding:10px 12px;gap:10px}
+  .brand strong{font-size:16px}.brand small{font-size:11px}.logo{font-size:24px}
+  .menu-btn{display:block;margin-left:auto}
+  .top-right{order:3;width:100%;justify-content:flex-start}
+  .top-right .pill.soft{display:none}
+  #nav{display:none;order:4;flex-basis:100%;flex-direction:column;align-items:stretch;background:rgba(255,255,255,.12);border-radius:14px;padding:8px}
+  #nav.open{display:flex}
+  #nav button{text-align:left;border:none;border-bottom:1px solid rgba(255,255,255,.18);border-radius:10px;padding:12px}
+  #nav button.active{background:#fff;color:#0f766e}
+  main{padding:14px 14px 96px}
+  .hero{grid-template-columns:1fr;padding:18px}
+  .hero h1{font-size:32px}
+  h1{font-size:26px}
+  #bottomnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:#0f766e;border-top:2px solid #f59e0b;padding:6px 4px calc(6px + env(safe-area-inset-bottom));justify-content:space-around;box-shadow:0 -4px 18px rgba(0,0,0,.2)}
+  #bottomnav button{background:transparent;border:none;color:#c8f5ee;font-size:20px;padding:6px 8px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:56px}
+  #bottomnav button span{font-size:11px;font-weight:700}
+  #bottomnav button.active{background:rgba(255,255,255,.18);color:#fff}
+  footer{padding-bottom:96px}
+}
 @media print{
   body{background:#fff}.topbar,footer,.btn,.steps,#nav{display:none!important}
   main{max-width:100%;padding:0}

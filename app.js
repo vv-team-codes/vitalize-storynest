@@ -8,7 +8,16 @@ function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.project
 function save(){localStorage.setItem(LS,JSON.stringify(state));renderCounts();}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function uid(){return 'id'+Date.now().toString(36)+Math.floor(Math.random()*999);}
-function go(p){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('.page').forEach(s=>s.classList.remove('active'));const el=document.getElementById('page-'+p);if(el)el.classList.add('active');if(p==='library')renderLibrary();if(p==='projects')renderProjects();if(p==='dashboard')renderDashboard();if(p==='admin')renderAdmin();if(p==='settings')renderProviders();if(p==='home')renderHome();window.scrollTo(0,0);}
+function go(p){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('.page').forEach(s=>s.classList.remove('active'));const el=document.getElementById('page-'+p);if(el)el.classList.add('active');const nav=document.getElementById('nav');if(nav)nav.classList.remove('open');if(p==='library')renderLibrary();if(p==='projects')renderProjects();if(p==='dashboard')renderDashboard();if(p==='admin')renderAdmin();if(p==='settings')renderProviders();if(p==='home')renderHome();window.scrollTo(0,0);}
+function toggleMenu(){const nav=document.getElementById('nav');if(nav)nav.classList.toggle('open');}
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;const b=document.getElementById('installBtn');if(b)b.style.display='inline-block';});
+async function installApp(){
+  if(deferredInstallPrompt){deferredInstallPrompt.prompt();const r=await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;if(r&&r.outcome==='accepted')return;}
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  alert(isIOS?'To install on iPhone/iPad: tap Share (⬆) in Safari, then "Add to Home Screen".':'To install: open the browser menu (⋮) and tap "Install app" / "Add to Home screen". If that option is missing, make sure you opened the site in Chrome.');
+}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
 document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.page)));
 function renderCounts(){const p=document.getElementById('countPill');if(p)p.textContent=state.projects.length+' projects · '+state.characters.length+' characters';}
 function logHistory(kind,detail){state.history.unshift({kind,detail,at:new Date().toISOString()});state.history=state.history.slice(0,100);save();}
