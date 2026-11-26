@@ -11,9 +11,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="StoryNest">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=7">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="hero.css?v=6">
+<link rel="stylesheet" href="hero.css?v=7">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body class="on-home">
@@ -53,29 +53,43 @@
 
 <!-- HOME -->
 <section class="page active" id="page-home">
-  <div class="landing-hero" role="img" aria-label="Vitalize StoryNest — magical treehouse, a boy and his dog at sunset, a castle on a hill">
-    <button class="hotspot hs-brand" type="button" aria-label="Vitalize StoryNest — Home" onclick="go('home')"></button>
-    <button class="hotspot hs-home" type="button" aria-label="Home" onclick="go('home')"></button>
-    <button class="hotspot hs-book" type="button" aria-label="Picture Book" onclick="go('book')"></button>
-    <button class="hotspot hs-animation" type="button" aria-label="Animation" onclick="go('animation')"></button>
-    <button class="hotspot hs-library" type="button" aria-label="Library" onclick="go('library')"></button>
-    <button class="hotspot hs-pricing" type="button" aria-label="Pricing" onclick="go('pricing')"></button>
-    <button class="hotspot hs-signin" type="button" aria-label="Sign In" onclick="startGoogleSignIn()"></button>
-    <button class="hotspot hs-getstarted" type="button" aria-label="Get Started" onclick="go('book')"></button>
-    <button class="hotspot hs-create" type="button" aria-label="Create Your Story" onclick="go('book')"></button>
-    <button class="hotspot hs-card-book" type="button" aria-label="Picture Book — Create illustrated story books" onclick="go('book')"></button>
-    <button class="hotspot hs-card-animation" type="button" aria-label="Animation — Bring stories to life" onclick="go('animation')"></button>
-    <button class="hotspot hs-card-music" type="button" aria-label="Music Video — Add music to your story" onclick="go('music')"></button>
-    <button class="hotspot hs-card-comic" type="button" aria-label="Comic — Create fun comic stories" onclick="go('comic')"></button>
-    <h1 class="sr-only">Build Magical Stories for Curious Minds</h1>
-    <p class="sr-only">Create, animate and share unique stories for children with the power of AI.</p>
+  <div class="landing-hero">
+    <div class="hero-scene" aria-hidden="true">
+      <div class="hs-sun"></div>
+      <div class="hs-cloud c1"></div>
+      <div class="hs-cloud c2"></div>
+      <div class="hs-cloud c3"></div>
+      <div class="hs-castle"><span class="tower t1"></span><span class="tower t2"></span><span class="tower t3"></span><span class="castle-base"></span></div>
+      <div class="hs-hill h1"></div>
+      <div class="hs-hill h2"></div>
+      <div class="hs-river"></div>
+      <div class="hs-tree">
+        <div class="hs-canopy"></div>
+        <div class="hs-trunk"></div>
+        <div class="hs-treehouse"><span class="win w1"></span><span class="win w2"></span><span class="balcony"></span></div>
+        <div class="hs-ladder"></div>
+      </div>
+      <div class="hs-figures"><span class="hs-boy"></span><span class="hs-dog"></span></div>
+      <div class="hs-flowers"></div>
+    </div>
+    <div class="hero-content">
+      <h1>Build Magical Stories<br>for Curious Minds</h1>
+      <p>Create, animate and share unique stories for children with the power of AI.</p>
+      <button class="hero-cta" type="button" onclick="go('book')">Create Your Story <span aria-hidden="true">&rarr;</span></button>
+    </div>
+    <div class="hero-cards">
+      <button class="hero-card" type="button" onclick="go('book')"><span class="hc-icon" aria-hidden="true">&#128214;</span><strong>Picture Book</strong><span>Create illustrated story books</span></button>
+      <button class="hero-card" type="button" onclick="go('animation')"><span class="hc-icon" aria-hidden="true">&#127916;</span><strong>Animation</strong><span>Bring stories to life</span></button>
+      <button class="hero-card" type="button" onclick="go('music')"><span class="hc-icon" aria-hidden="true">&#127925;</span><strong>Music Video</strong><span>Add music to your story</span></button>
+      <button class="hero-card" type="button" onclick="go('comic')"><span class="hc-icon" aria-hidden="true">&#128172;</span><strong>Comic</strong><span>Create fun comic stories</span></button>
+    </div>
   </div>
   <div class="grid3" id="homeStats"></div>
   <h2>How it works</h2>
   <div class="grid3">
-    <div class="card"><h3>1 · Idea</h3><p>Type an idea, paste a manuscript, upload a .txt file, or pick a suggested idea.</p></div>
-    <div class="card"><h3>2 · Story &amp; Characters</h3><p>Pick age, type, language and pages. The engine writes the title, moral, characters and page-by-page text. The Character Bible locks face, hair, outfit and colours so every picture matches.</p></div>
-    <div class="card"><h3>3 · Illustrate &amp; Export</h3><p>Generate a picture for every page in 10 styles, edit in the book editor, read aloud, and export a watermark-free PDF.</p></div>
+    <div class="card"><h3>1 &middot; Idea</h3><p>Type an idea, paste a manuscript, upload a .txt file, or pick a suggested idea.</p></div>
+    <div class="card"><h3>2 &middot; Story &amp; Characters</h3><p>Pick age, type, language and pages. The engine writes the title, moral, characters and page-by-page text. The Character Bible locks face, hair, outfit and colours so every picture matches.</p></div>
+    <div class="card"><h3>3 &middot; Illustrate &amp; Export</h3><p>Generate a picture for every page in 10 styles, edit in the book editor, read aloud, and export a watermark-free PDF.</p></div>
   </div>
   <h2>Sample books in this browser</h2>
   <div class="grid3" id="homeSamples"></div>
@@ -301,7 +315,7 @@
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="auth.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="auth.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
