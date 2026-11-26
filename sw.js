@@ -14,9 +14,10 @@
    v25: welcome hero is a video background (hero-video.js + index.html + hero.css) + smaller line-style icons on the four hero cards (index.html + hero.css); static hero picture stays as poster/fallback; assets v25, SW vsn-shell-v25.
    v24: Quick Video — in-site video only (app.js + index.html + styles.css): title/topic/wish-list, character upload or 3 sample multi-part SVG characters, style picture picker, animation select, parallel fast scene pictures, direct render with moving character parts (arms/legs/mouth) + scene crossfades; external-video UI hidden, video proxy code kept dormant in the repo + versions bumped to v24.
    v26: purple auth splash removed (index.html + styles.css + auth.js) — welcome hero shows immediately on load; assets v26, SW vsn-shell-v26.
-   v27: hero video retry — v25's single play() could stall silently, so the video never started; now load() + 2s watchdog retries, resume on visibilitychange and first gesture (hero-video.js + index.html); assets v27, SW vsn-shell-v27. */
-const CACHE = 'vsn-shell-v27';
-const ASSETS = ['./', './index.html', './styles.css?v=26', './hero.css?v=23', './hero-bg.css?v=15', './hero-video.js?v=27', './logo.css?v=15', './app.js?v=18', './auth.js?v=26', './manifest.json', './icon.svg'];
+   v27: hero video retry — v25's single play() could stall silently, so the video never started; now load() + 2s watchdog retries, resume on visibilitychange and first gesture (hero-video.js + index.html); assets v27, SW vsn-shell-v27.
+   v28: 1-Minute Film — Quick Video makes 6 scenes × 10s = 60s by default, and the built-in renderer now mixes in a free Web Audio music bed as a real audio track (app.js + index.html); assets v28, SW vsn-shell-v28. */
+const CACHE = 'vsn-shell-v28';
+const ASSETS = ['./', './index.html', './styles.css?v=26', './hero.css?v=23', './hero-bg.css?v=15', './hero-video.js?v=27', './logo.css?v=15', './app.js?v=28', './auth.js?v=26', './manifest.json', './icon.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });

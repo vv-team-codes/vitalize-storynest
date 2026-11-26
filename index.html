@@ -254,9 +254,10 @@
     <h4>Style — tap a picture</h4>
     <div id="qvStyles" class="qv-styles"></div>
     <div class="row qv-anim-row"><label class="anim-format">Animation <select id="qvAnimSel"><option value="talk" selected>Talk &amp; smile</option><option value="wave">Wave hello</option><option value="walk">Walk</option><option value="run">Run</option><option value="dance">Dance</option><option value="jump">Jump for joy</option></select></label><label class="anim-format">Scenes <input type="number" id="qvScenes" min="3" max="6" value="4" style="width:70px"></label></div>
+    <div class="row"><label><input type="checkbox" id="qvOneMin" checked> 🎬 1-Minute Film — 6 scenes × 10 seconds each (one video, one download)</label></div>
     <div class="row"><button class="btn primary" id="qvBtn" onclick="buildQuickVideo()">▶ Make my video</button><button class="btn" id="qvCancel" style="display:none" onclick="cancelQuickVideo()">✕ Cancel</button><span id="qvStatus" class="muted"></span></div>
     <div class="progress-wrap"><div class="progress-bar" id="qvProgress"></div></div>
-    <p class="muted small" id="qvNote">Pictures generate fast, a few seconds apart, then the video renders below (1 minute takes a full minute — keep this tab open).</p>
+    <p class="muted small" id="qvNote">Pictures generate fast, a few seconds apart, then the video renders below (1 minute takes a full minute — keep this tab open). Free version: the video has a gentle music track and dialogue captions with a moving mouth — spoken voice is not included, because a browser cannot record its own voice; a real voice needs a paid video service.</p>
   </div>
   <div class="card anim-idea-card"><h3>Storyboard</h3>
     <div class="anim-idea-grid">
@@ -416,6 +417,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="auth.js?v=26"></script>
-<script src="app.js?v=18"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>
