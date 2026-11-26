@@ -155,8 +155,13 @@
   </div>
   <div class="card"><h3>Built-in video renderer (no key needed)</h3>
     <p class="muted small">Renders your storyboard scenes on a canvas with slow zoom / gentle pan, captions and narration text, and records it with MediaRecorder. The file downloads from this browser. This is a Ken-Burns-style render of your generated illustrations — it is not an external AI video model.</p>
-    <div class="row"><button class="btn primary" id="renderBtn" onclick="renderVideo()">▶ Render video in browser</button><span id="renderStatus" class="muted"></span></div>
+    <div class="row"><button class="btn primary" id="renderBtn" onclick="renderVideo()">▶ Render video in browser</button><button class="btn" id="renderCancel" style="display:none" onclick="cancelVideoRender()">✕ Cancel</button><span id="renderStatus" class="muted"></span></div>
+    <div class="progress-wrap"><div class="progress-bar" id="renderProgress"></div></div>
+    <p class="muted small">Tip: click Render once — the preview below plays live while it records. A 15s test is fastest; 1 min takes a full minute. Keep this tab open until it says Done.</p>
+    <div id="renderPreview"></div>
+    <p id="renderError" class="error-text"></p>
     <video id="animVideo" controls style="width:100%;max-width:480px;display:none"></video>
+    <div class="row"><a class="btn primary" id="downloadVideoBtn" style="display:none" href="#">⬇ Download video (.webm)</a></div>
     <p class="muted small" id="renderNote"></p>
   </div>
   <div class="card"><h3>External video providers</h3><p class="muted small">Configure in Settings → Providers. Runway, Pika, Luma, Kling, Veo — a saved key shows “Key saved — not verified” until Test Connection passes. Copy-ready prompts above are made for pasting into any of them.</p></div>

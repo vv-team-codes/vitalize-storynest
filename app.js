@@ -146,34 +146,89 @@ function generateStoryboard(){
 function copyText(t){if(navigator.clipboard)navigator.clipboard.writeText(t);else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}}
 function copyPrompt(i){copyText(storyboard[i].prompt);alert('Prompt copied.');}
 function copyAllPrompts(){if(!storyboard.length)return alert('Generate a storyboard first.');copyText(storyboard.map(s=>s.prompt).join('\n\n'));alert('All '+storyboard.length+' prompts copied.');}
+let rendering=false, cancelRender=false, lastVideoUrl=null, renderTimer=null;
 function renderVideo(){
-  if(!storyboard.length)return alert('Generate a storyboard first.');
+  if(rendering) return;
+  if(!storyboard.length) generateStoryboard();
+  if(!storyboard.length){alert('Generate a storyboard first.');return;}
+  const status=document.getElementById('renderStatus'), err=document.getElementById('renderError'),
+    bar=document.getElementById('renderProgress'), btn=document.getElementById('renderBtn'),
+    cancelBtn=document.getElementById('renderCancel'), dl=document.getElementById('downloadVideoBtn');
+  if(err) err.textContent=''; if(dl) dl.style.display='none';
+  if(typeof MediaRecorder==='undefined'){
+    if(status) status.textContent='This browser cannot record video.';
+    if(err) err.textContent='MediaRecorder is not supported in this browser. Please try Chrome or Edge on a desktop — Safari on iPhone does not support in-browser video recording here. Your storyboard and copy-ready prompts above still work in Runway / Pika / Luma.';
+    return;
+  }
   const ratio=document.getElementById('anRatio').value, dur=parseInt(document.getElementById('anDur').value)||60;
   const q=document.getElementById('anQuality').value;
   const W=ratio==='9:16'?(q==='1080p'?1080:720):ratio==='16:9'?(q==='1080p'?1920:1280):(q==='1080p'?1080:720);
   const H=ratio==='9:16'?(q==='1080p'?1920:1280):ratio==='16:9'?(q==='1080p'?1080:720):(q==='1080p'?1080:720);
-  const status=document.getElementById('renderStatus');status.textContent='Rendering '+dur+'s · '+ratio+' · '+q+' … (in this browser)';
-  const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
-  const stream=canvas.captureStream(30);let mime='video/webm';if(!MediaRecorder.isTypeSupported(mime))mime='';
-  const rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:5000000}:undefined);
-  const chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
-  rec.onstop=()=>{const blob=new Blob(chunks,{type:'video/webm'});const url=URL.createObjectURL(blob);const v=document.getElementById('animVideo');v.src=url;v.style.display='block';const a=document.createElement('a');a.href=url;a.download='vitalize-storynest-video-'+dur+'s.webm';a.click();status.textContent='Done — video downloaded (WebM, '+dur+'s, '+ratio+', '+q+'). Playback above.';document.getElementById('renderNote').textContent='Built-in renderer: canvas + MediaRecorder in this browser. Not an external AI video model.';logHistory('video','Rendered '+dur+'s video '+ratio+' '+q);save();};
-  rec.start();
-  const per=dur/storyboard.length;const start=performance.now();
-  function draw(now){
-    const t=(now-start)/1000;if(t>=dur){rec.stop();return;}
-    const idx=Math.min(storyboard.length-1,Math.floor(t/per));const local=(t-idx*per)/per;const s=storyboard[idx];
-    const zoom=1+local*0.15;ctx.save();ctx.fillStyle=['#fde68a','#bae6fd','#fbcfe8','#d1fae5'][idx%4];ctx.fillRect(0,0,W,H);
-    ctx.translate(W/2,H/2);ctx.scale(zoom,zoom);ctx.translate(-W/2,-H/2);
-    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(W/2,H*0.4,Math.min(W,H)*0.18,0,7);ctx.fill();
-    ctx.fillStyle='#1e1b2e';ctx.beginPath();ctx.arc(W/2-30,H*0.38,8,0,7);ctx.arc(W/2+30,H*0.38,8,0,7);ctx.fill();
-    ctx.strokeStyle='#1e1b2e';ctx.lineWidth=5;ctx.beginPath();ctx.arc(W/2,H*0.42,40,0.2,Math.PI-0.2);ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(0,H-90,W,90);ctx.fillStyle='#fff';ctx.font='28px sans-serif';ctx.fillText('Scene '+(idx+1)+' — '+s.narration.slice(0,70),20,H-40);
-    requestAnimationFrame(draw);
+  const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;canvas.style.width='100%';canvas.style.maxWidth='480px';canvas.style.borderRadius='16px';canvas.style.display='block';
+  const preview=document.getElementById('renderPreview'); if(preview){preview.innerHTML='';preview.appendChild(canvas);}
+  const ctx=canvas.getContext('2d');
+  if(!canvas.captureStream){
+    if(status) status.textContent='This browser cannot capture the canvas.';
+    if(err) err.textContent='canvas.captureStream is not supported in this browser. Please try Chrome or Edge on a desktop.';
+    return;
   }
-  requestAnimationFrame(draw);
+  let rec;
+  try{
+    const stream=canvas.captureStream(30);
+    const mimes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+    const mime=mimes.find(m=>{try{return MediaRecorder.isTypeSupported(m);}catch(e){return false;}})||'';
+    rec=new MediaRecorder(stream, mime?{mimeType:mime,videoBitsPerSecond:5000000}:undefined);
+  }catch(e){
+    if(status) status.textContent='Video recorder could not start.';
+    if(err) err.textContent='Recorder error: '+(e&&e.message?e.message:e)+'. Try Chrome or Edge on a desktop, then click Render again.';
+    return;
+  }
+  rendering=true; cancelRender=false;
+  if(btn){btn.disabled=true;btn.textContent='⏳ Rendering…';}
+  if(cancelBtn) cancelBtn.style.display='inline-block';
+  if(status) status.textContent='Rendering 0s / '+dur+'s · Scene 1/'+storyboard.length+' … keep this tab open';
+  if(bar) bar.style.width='0%';
+  const chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+  rec.onerror=e=>{if(status)status.textContent='Recording error — please try again.';if(err)err.textContent='Recorder error: '+((e&&e.error&&e.error.name)||'unknown')+'. Try a shorter video (15s) in Chrome on a desktop.';};
+  rec.onstop=()=>{
+    rendering=false;
+    if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';}
+    if(cancelBtn) cancelBtn.style.display='none';
+    if(!chunks.length||cancelRender){ if(status)status.textContent=cancelRender?'Render cancelled.':'No video data was recorded — please try again in Chrome on a desktop.'; if(bar)bar.style.width='0%'; return; }
+    const blob=new Blob(chunks,{type:'video/webm'}); const url=URL.createObjectURL(blob); lastVideoUrl=url;
+    const v=document.getElementById('animVideo'); v.src=url; v.style.display='block'; v.load();
+    if(dl){dl.href=url; dl.download='vitalize-storynest-video-'+dur+'s.webm'; dl.style.display='inline-block';}
+    if(status) status.textContent='Done — '+dur+'s · '+ratio+' · '+q+'. Play it above or tap Download video.';
+    document.getElementById('renderNote').textContent='Built-in renderer: canvas + MediaRecorder in this browser. Not an external AI video model.';
+    try{const a=document.createElement('a');a.href=url;a.download='vitalize-storynest-video-'+dur+'s.webm';document.body.appendChild(a);a.click();a.remove();}catch(e){}
+    logHistory('video','Rendered '+dur+'s video '+ratio+' '+q); save();
+  };
+  const per=dur/storyboard.length; const start=performance.now();
+  function drawFrame(t){
+    const idx=Math.min(storyboard.length-1,Math.floor(t/per)); const local=Math.min(1,(t-idx*per)/per); const s=storyboard[idx];
+    const zoom=1+local*0.15; ctx.save();
+    ctx.fillStyle=['#fde68a','#bae6fd','#fbcfe8','#d1fae5'][idx%4]; ctx.fillRect(0,0,W,H);
+    ctx.translate(W/2,H/2); ctx.scale(zoom,zoom); ctx.translate(-W/2,-H/2);
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(W/2,H*0.4,Math.min(W,H)*0.18,0,7); ctx.fill();
+    ctx.fillStyle='#1e1b2e'; ctx.beginPath(); ctx.arc(W/2-30,H*0.38,8,0,7); ctx.arc(W/2+30,H*0.38,8,0,7); ctx.fill();
+    ctx.strokeStyle='#1e1b2e'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(W/2,H*0.42,40,0.2,Math.PI-0.2); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,H-90,W,90); ctx.fillStyle='#fff'; ctx.font='28px sans-serif';
+    ctx.fillText('Scene '+(idx+1)+' — '+s.narration.slice(0,70),20,H-40);
+    return idx;
+  }
+  drawFrame(0);
+  try{ rec.start(250); }catch(e){ rendering=false; if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';} if(err)err.textContent='Recorder could not start: '+(e&&e.message?e.message:e); return; }
+  renderTimer=setInterval(()=>{
+    const t=(performance.now()-start)/1000;
+    if(cancelRender||t>=dur){ clearInterval(renderTimer); try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} return; }
+    const idx=drawFrame(t);
+    const done=Math.floor(t);
+    if(status) status.textContent='Rendering… '+done+'s / '+dur+'s · Scene '+(idx+1)+'/'+storyboard.length+' — keep this tab open';
+    if(bar) bar.style.width=Math.round(t/dur*100)+'%';
+  },100);
 }
+function cancelVideoRender(){ if(!rendering) return; cancelRender=true; if(renderTimer) clearInterval(renderTimer); }
 
 /* ---------- Music / Comic ---------- */
 function generateSong(){
