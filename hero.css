@@ -170,3 +170,48 @@ body:not(.signed-in) .welcome-hero{min-height:100vh;min-height:100svh}
 .hero-leaves .l1{left:20%;top:10%;animation-duration:12s}
 .hero-leaves .l2{left:27%;top:6%;animation-duration:16s;animation-delay:-6s}
 @keyframes leafFall{0%{transform:translate(0,0) rotate(0deg);opacity:0}12%{opacity:.85}50%{transform:translate(-16px,34vh) rotate(140deg)}100%{transform:translate(10px,68vh) rotate(300deg);opacity:0}}
+
+/* ---- v22: visible welcome motion — water flows, pool ripples, grass sways ----
+   v18's overlays were real but too faint and slow to notice (58–78s clouds,
+   a 110px shimmer, 11px leaves). This pass makes the motion obvious: faster
+   + bigger clouds, a strong flowing-water band with moving streaks, expanding
+   pool ripples, and a row of swaying grass blades along the bottom. The wind
+   now shows as drifting golden petals as well as leaves. Still overlays
+   only — absolute, pointer-events none, no height added, no-scroll intact,
+   and the existing prefers-reduced-motion rule disables them all.
+   LIMIT (unchanged): the boy's hair and the puppy are painted into the flat
+   picture, so they cannot move without rebuilding the scene as layers. */
+.hero-clouds span{opacity:.6}
+.hero-clouds .c1{width:320px;height:80px;animation-duration:38s}
+.hero-clouds .c2{width:230px;height:60px;animation-duration:48s;opacity:.5}
+.hero-clouds .c3{width:270px;height:70px;animation-duration:42s;opacity:.55}
+.hero-shimmer{width:150px;animation:shimmerPulse 3.5s ease-in-out infinite,shimmerSway 7s ease-in-out infinite alternate}
+@keyframes shimmerPulse{0%,100%{opacity:.4}50%{opacity:.85}}
+.hero-leaves span{width:14px;height:18px;opacity:.9}
+.hero-leaves .l1{animation-duration:9s}
+.hero-leaves .l2{animation-duration:11s}
+.hero-leaves .l3{left:34%;top:4%;animation-duration:10s;animation-delay:-3s;background:rgba(255,214,120,.9)}
+.hero-leaves .l4{left:12%;top:8%;animation-duration:13s;animation-delay:-8s;background:rgba(255,214,120,.9)}
+.hero-water,.hero-ripples,.hero-grass{position:absolute;z-index:2;pointer-events:none;overflow:hidden}
+.hero-water{right:1%;top:28%;width:170px;height:48%;background:repeating-linear-gradient(115deg,rgba(255,255,255,.6) 0 7px,transparent 7px 24px);background-size:100% 220px;filter:blur(2px);border-radius:42%;opacity:.75;animation:waterFlow 2.4s linear infinite}
+@keyframes waterFlow{from{background-position:0 0}to{background-position:0 220px}}
+.hero-ripples{right:5%;bottom:7%;width:190px;height:64px;overflow:visible}
+.hero-ripples span{position:absolute;inset:0;border:2px solid rgba(255,255,255,.75);border-radius:50%;animation:ripple 3s ease-out infinite}
+.hero-ripples .r2{animation-delay:1s}
+.hero-ripples .r3{animation-delay:2s}
+@keyframes ripple{from{transform:scale(.3);opacity:.85}to{transform:scale(1.2);opacity:0}}
+.hero-grass{left:0;right:0;bottom:0;height:48px}
+.hero-grass span{position:absolute;bottom:0;width:5px;height:34px;background:linear-gradient(180deg,#8fd35a,#3f9e3f);border-radius:50% 50% 0 0;transform-origin:bottom center;animation:grassSway 2.6s ease-in-out infinite alternate}
+@keyframes grassSway{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+.hero-grass span:nth-child(1){left:2%;height:30px;animation-delay:-.2s}
+.hero-grass span:nth-child(2){left:9%;height:42px;animation-delay:-1.1s}
+.hero-grass span:nth-child(3){left:16%;height:28px;animation-delay:-.6s}
+.hero-grass span:nth-child(4){left:24%;height:38px;animation-delay:-1.8s}
+.hero-grass span:nth-child(5){left:33%;height:32px;animation-delay:-.9s}
+.hero-grass span:nth-child(6){left:41%;height:44px;animation-delay:-2.2s}
+.hero-grass span:nth-child(7){left:49%;height:30px;animation-delay:-.4s}
+.hero-grass span:nth-child(8){left:57%;height:40px;animation-delay:-1.5s}
+.hero-grass span:nth-child(9){left:65%;height:28px;animation-delay:-2.5s}
+.hero-grass span:nth-child(10){left:73%;height:36px;animation-delay:-.8s}
+.hero-grass span:nth-child(11){left:82%;height:30px;animation-delay:-1.9s}
+.hero-grass span:nth-child(12){left:91%;height:42px;animation-delay:-1.3s}
