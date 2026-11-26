@@ -1,11 +1,143 @@
-/* Vitalize StoryNest — standalone, built-in engine. No API keys, no limits, localStorage only. */
+/* ekiddy.com — standalone, built-in engine. No API keys, no limits, localStorage only. */
 const LS='vsn_state_v1';
 let state=load();
 let current=null; // current book being edited
 let reader={book:null,idx:0};
 let storyboard=[];
 function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.projects)return s}catch(e){}return{projects:[],characters:[],history:[],providers:{},theme:'indigo',library:[]};}
-function save(){localStorage.setItem(LS,JSON.stringify(state));renderCounts();}
+/* v15: generated pictures are BIG — each is a data URL of ~2MB, so a
+   4-page book is ~8MB, but localStorage holds only about 5MB. The old
+   save() threw at setItem and the save silently failed: the header
+   counter never updated and the book vanished on reload (only the
+   in-memory copy was ever visible). Pictures now live in IndexedDB
+   (large quota); localStorage keeps only a small 'idb:<bookId>' marker
+   per picture, and save() can never throw — the counter always updates. */
+const IDB_NAME='vsn_images_v1', IDB_STORE='imgs';
+let _idbP=null;
+function idbOpen(){
+  if(_idbP) return _idbP;
+  _idbP=new Promise(function(res,rej){
+    try{
+      const rq=indexedDB.open(IDB_NAME,1);
+      rq.onupgradeneeded=function(){ try{ rq.result.createObjectStore(IDB_STORE); }catch(e){} };
+      rq.onsuccess=function(){ res(rq.result); };
+      rq.onerror=function(){ rej(rq.error||new Error('idb open failed')); };
+    }catch(e){ rej(e); }
+  });
+  _idbP.catch(function(){ _idbP=null; });
+  return _idbP;
+}
+function idbPut(key,val){
+  return idbOpen().then(function(db){
+    return new Promise(function(res,rej){
+      try{
+        const tx=db.transaction(IDB_STORE,'readwrite');
+        tx.objectStore(IDB_STORE).put(val,key);
+        tx.oncomplete=function(){ res(); };
+        tx.onerror=function(){ rej(tx.error||new Error('idb put failed')); };
+      }catch(e){ rej(e); }
+    });
+  });
+}
+function idbGet(key){
+  return idbOpen().then(function(db){
+    return new Promise(function(res,rej){
+      try{
+        const tx=db.transaction(IDB_STORE,'readonly');
+        const rq=tx.objectStore(IDB_STORE).get(key);
+        rq.onsuccess=function(){ res(rq.result); };
+        rq.onerror=function(){ rej(rq.error||new Error('idb get failed')); };
+      }catch(e){ rej(e); }
+    });
+  });
+}
+function idbDel(key){
+  return idbOpen().then(function(db){
+    return new Promise(function(res){
+      try{
+        const tx=db.transaction(IDB_STORE,'readwrite');
+        tx.objectStore(IDB_STORE).delete(key);
+        tx.oncomplete=function(){ res(); };
+        tx.onerror=function(){ res(); };
+      }catch(e){ res(); }
+    });
+  }).catch(function(){});
+}
+function isGenImg(u){return typeof u==='string'&&u.indexOf('data:image/')===0&&u.indexOf('data:image/svg+xml')!==0;}
+function isIdbMarker(u){return typeof u==='string'&&u.indexOf('idb:')===0;}
+/* Split a book into a small localStorage copy (markers) + an IndexedDB
+   record of its generated pictures. Never mutates the live book. */
+const _imgQueue={};
+function lightCopyBook(b){
+  if(!b||(!b.pages&&!b.panels)) return b;
+  const c={}; for(const k in b) c[k]=b[k];
+  const imgs={};
+  if(b.pages) c.pages=b.pages.map(function(p){
+    if(!isGenImg(p.img)) return p;
+    imgs['p'+p.n]=p.img;
+    const q={}; for(const k in p) q[k]=p[k];
+    q.img='idb:'+b.id;
+    return q;
+  });
+  if(b.panels) c.panels=b.panels.map(function(p){
+    if(!isGenImg(p.img)) return p;
+    imgs['c'+p.n]=p.img;
+    const q={}; for(const k in p) q[k]=p[k];
+    q.img='idb:'+b.id;
+    return q;
+  });
+  if(Object.keys(imgs).length) _imgQueue[b.id]=Object.assign({},_imgQueue[b.id]||{},imgs);
+  return c;
+}
+function stripBookImgs(b){
+  if(!b) return;
+  if(b.pages) b.pages.forEach(function(p){ if(isGenImg(p.img)||isIdbMarker(p.img)) p.img=''; });
+  if(b.panels) b.panels.forEach(function(p){ if(isGenImg(p.img)||isIdbMarker(p.img)) p.img=''; });
+}
+function save(){
+  let light=null;
+  try{
+    light={projects:state.projects.map(lightCopyBook),characters:state.characters,history:state.history,providers:state.providers,theme:state.theme,library:state.library.map(lightCopyBook)};
+    Object.keys(_imgQueue).forEach(function(id){ const rec=_imgQueue[id]; delete _imgQueue[id]; idbPut(id,rec).catch(function(){}); });
+    localStorage.setItem(LS,JSON.stringify(light));
+  }catch(e){
+    try{
+      if(light){ light.projects.forEach(stripBookImgs); light.library.forEach(stripBookImgs); localStorage.setItem(LS,JSON.stringify(light)); }
+    }catch(e2){}
+  }
+  renderCounts();
+}
+/* Restore a book's generated pictures from IndexedDB (markers become
+   real pictures again; a missing picture falls back to the built-in
+   illustration, never a broken image). */
+async function hydrateBook(b){
+  if(!b) return b;
+  const lists=[];
+  if(b.pages) lists.push(b.pages);
+  if(b.panels) lists.push(b.panels);
+  let need=false;
+  lists.forEach(function(ps){ ps.forEach(function(p){ if(isIdbMarker(p.img)) need=true; }); });
+  if(!need) return b;
+  let rec=null;
+  try{ rec=await idbGet(b.id); }catch(e){ rec=null; }
+  lists.forEach(function(ps){
+    ps.forEach(function(p){
+      if(!isIdbMarker(p.img)) return;
+      const kind=(ps===b.panels)?'c':'p';
+      const v=rec&&rec[kind+p.n];
+      if(typeof v==='string'&&v.indexOf('data:image/')===0){ p.img=v; }
+      else { try{ p.img=makeSVG(p,b.style||'Storybook Illustration'); }catch(e){ p.img=''; } }
+    });
+  });
+  return b;
+}
+function hydrateAll(){
+  const books=state.projects.concat(state.library);
+  Promise.all(books.map(function(b){ return hydrateBook(b).catch(function(){ return b; }); })).then(function(){
+    renderProjects(); renderLibrary(); renderSimpleHome(); renderDashboard();
+    if(current){ renderBookOut(); renderEditor(); renderIllus(); }
+  });
+}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function uid(){return 'id'+Date.now().toString(36)+Math.floor(Math.random()*999);}
 function go(p,push){try{if('speechSynthesis' in window)speechSynthesis.cancel();}catch(e){}document.body.classList.remove('reading-aloud');/* v10: defence in depth — while signed out, any navigation past the
@@ -51,7 +183,7 @@ document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',(
     });
   }
 })();
-function renderCounts(){const p=document.getElementById('countPill');if(p)p.textContent=state.projects.length+' projects · '+state.characters.length+' characters';}
+function renderCounts(){const p=document.getElementById('countPill');if(p)p.textContent=state.projects.length+(state.projects.length===1?' project · ':' projects · ')+state.characters.length+(state.characters.length===1?' character':' characters');}
 function logHistory(kind,detail){state.history.unshift({kind,detail,at:new Date().toISOString()});state.history=state.history.slice(0,100);save();}
 
 /* ---------- Story engine ---------- */
@@ -335,7 +467,7 @@ function downloadPageImages(){if(!current)return alert('Generate a book first.')
 function downloadStoryText(){if(!current)return alert('Generate a book first.');const txt=current.title+'\n'+current.desc+'\nMoral: '+current.moral+'\n\n'+current.pages.map(p=>'Page '+p.n+': '+p.text).join('\n\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download=current.title.replace(/\W+/g,'-')+'.txt';a.click();}
 function shareToLibrary(){if(!current)return;current.shared=true;if(!state.library.find(b=>b.id===current.id))state.library.unshift(current);saveCurrentBook();save();renderLibrary();alert('Shared to Library.');}
 function renderLibrary(){const el=document.getElementById('libraryOut');if(!el)return;const books=state.library.length?state.library:state.projects.filter(p=>p.kind==='book');el.innerHTML=books.length?books.map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||'')+'</p><p class="muted small">'+(b.pages?b.pages.length:0)+' pages · '+esc(b.type||'')+' · '+esc(b.lang||'en')+'</p><button class="btn primary" onclick="openReader(\''+b.id+'\')">📖 Read</button></div>').join(''):'<p class="muted">Library is empty — share a book from the Picture Book Generator.</p>';}
-function openReader(id){const b=state.projects.find(p=>p.id===id)||state.library.find(p=>p.id===id);if(!b)return;reader={book:b,idx:0};current=b;document.getElementById('readerCard').style.display='block';document.getElementById('readerTitle').textContent=b.title;renderReader();go('library');}
+async function openReader(id){const b=state.projects.find(p=>p.id===id)||state.library.find(p=>p.id===id);if(!b)return;await hydrateBook(b);reader={book:b,idx:0};current=b;document.getElementById('readerCard').style.display='block';document.getElementById('readerTitle').textContent=b.title;renderReader();go('library');}
 function renderReader(){const el=document.getElementById('readerOut');if(!reader.book)return;const p=reader.book.pages[reader.idx];el.innerHTML='<div class="book-page">'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<h3>Page '+p.n+' of '+reader.book.pages.length+'</h3><p style="font-size:19px">'+esc(p.text)+'</p></div>';}
 function readerPrev(){if(reader.idx>0){reader.idx--;renderReader();}}
 function readerNext(){if(reader.book&&reader.idx<reader.book.pages.length-1){reader.idx++;renderReader();}}
@@ -349,14 +481,21 @@ function readAloud(){if(document.body.classList.contains('reading-aloud')){stopR
    keep whatever is already saved in their browser (load() restores it). */
 function seed(){}
 function renderHome(){const el=document.getElementById('homeStats');if(el)el.innerHTML='<div class="card"><h3>'+state.projects.length+'</h3><p>Projects in this browser</p></div><div class="card"><h3>'+state.characters.length+'</h3><p>Saved characters</p></div><div class="card"><h3>Unlimited</h3><p>Generation — no daily limits</p></div>';
-  const h=document.getElementById('heroArt');if(h&&current)h.innerHTML='';if(h)h.innerHTML='<img src="'+makeSVG({scene:'Luna the Moon Rabbit with a glowing lantern',text:'StoryNest'},'Storybook Illustration')+'" alt="StoryNest illustration">';
+  const h=document.getElementById('heroArt');if(h&&current)h.innerHTML='';if(h)h.innerHTML='<img src="'+makeSVG({scene:'Luna the Moon Rabbit with a glowing lantern',text:'ekiddy'},'Storybook Illustration')+'" alt="ekiddy illustration">';
   const s=document.getElementById('homeSamples');if(s)s.innerHTML=state.projects.slice(0,3).map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||'')+'</p><button class="btn" onclick="openReader(\''+b.id+'\')">📖 Read</button></div>').join('')||'<p class="muted">No samples yet.</p>';
 }
 function renderSimpleHome(){const el=document.getElementById('simpleProjects');if(!el)return;el.innerHTML=state.projects.length?state.projects.map(b=>'<div class="simple-row"><div><strong>'+esc(b.title)+'</strong><br><span class="muted small">'+esc(b.desc||b.kind||'')+'</span></div><button class="btn" onclick="openProject(\''+b.id+'\')">Open</button></div>').join(''):'<p class="muted">No stories yet — tap \u201cCreate a story\u201d above to make your first one.</p>';}
 function renderProjects(){const el=document.getElementById('projectsOut');if(!el)return;el.innerHTML=state.projects.length?state.projects.map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||b.kind||'')+'</p><p class="muted small">'+(b.pages?b.pages.length+' pages · ':(b.chapters?b.chapters.length+' chapters · ':''))+esc(b.type||b.kind||'')+'</p><div class="row"><button class="btn" onclick="openProject(\''+b.id+'\')">Open</button><button class="btn" onclick="duplicateProject(\''+b.id+'\')">Duplicate</button><button class="btn danger" onclick="deleteProject(\''+b.id+'\')">Delete</button></div></div>').join(''):'<p class="muted">No projects yet — create one.</p>';}
-function openProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;if(b.kind==='story'){openStory(id);}else if(b.kind==='book'||b.pages){current=b;renderBookOut();renderEditor();go('book');}else if(b.kind==='comic'){go('comic');}else{go('projects');}}
-function duplicateProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;const c=JSON.parse(JSON.stringify(b));c.id=uid();c.title=b.title+' (copy)';state.projects.unshift(c);save();renderProjects();}
-function deleteProject(id){if(!confirm('Delete this project?'))return;state.projects=state.projects.filter(p=>p.id!==id);state.library=state.library.filter(p=>p.id!==id);save();renderProjects();renderLibrary();renderSimpleHome();}
+async function openProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;if(b.kind==='story'){openStory(id);}else if(b.kind==='book'||b.pages){await hydrateBook(b);current=b;renderBookOut();renderEditor();go('book');}else if(b.kind==='comic'){hydrateBook(b);go('comic');}else{go('projects');}}
+function duplicateProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;const c=JSON.parse(JSON.stringify(b));c.id=uid();c.title=b.title+' (copy)';
+  /* v15: pictures live in IndexedDB under the original's id — copy that
+     record to the new id and re-point the copy's markers, so deleting the
+     original never orphans the copy's pictures. */
+  const rewrite=function(list){ if(!list) return; list.forEach(function(p){ if(isIdbMarker(p.img)) p.img='idb:'+c.id; }); };
+  rewrite(c.pages); rewrite(c.panels);
+  if(c.pages||c.panels){ idbGet(id).then(function(rec){ if(rec) idbPut(c.id,rec).catch(function(){}); }).catch(function(){}); }
+  state.projects.unshift(c);save();renderProjects();}
+function deleteProject(id){if(!confirm('Delete this project?'))return;state.projects=state.projects.filter(p=>p.id!==id);state.library=state.library.filter(p=>p.id!==id);idbDel(id);save();renderProjects();renderLibrary();renderSimpleHome();}
 function renderDashboard(){const el=document.getElementById('dashStats');if(el)el.innerHTML='<div class="card"><h3>'+state.projects.length+'</h3><p>Total projects</p></div><div class="card"><h3>'+state.projects.filter(p=>p.pages&&p.pages.every(x=>x.img)).length+'</h3><p>Completed / fully illustrated</p></div><div class="card"><h3>'+state.characters.length+'</h3><p>Saved characters</p></div><div class="card"><h3>Unlimited</h3><p>Daily limit: none</p></div>';
   const r=document.getElementById('dashRecent');if(r)r.innerHTML=state.projects.slice(0,3).map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><button class="btn" onclick="openProject(\''+b.id+'\')">Open</button></div>').join('')||'';
   const h=document.getElementById('dashHistory');if(h)h.innerHTML=state.history.length?state.history.map(x=>'<p class="small">'+esc(x.at.slice(0,19).replace('T',' '))+' — <strong>'+esc(x.kind)+'</strong>: '+esc(x.detail)+'</p>').join(''):'<p class="muted">No generation history yet.</p>';
@@ -751,8 +890,8 @@ function saveKey(id){const v=document.getElementById('key-'+id).value.trim();sta
 async function testProvider(id){const p=PROVIDERS.find(x=>x.id===id);const s=state.providers[id]||{};const el=document.getElementById('test-'+id);if(!s.key){el.textContent='No key saved — cannot test.';return;}el.textContent='Testing…';try{const r=await fetch(p.endpoint,{method:'GET',headers:s.key?{Authorization:'Bearer '+s.key}:{},mode:'cors'});if(r.ok||r.status===401||r.status===403){s.verified=r.ok;save();renderProviders();document.getElementById('test-'+id).textContent=r.ok?'✅ Verified — provider responded.':'Provider responded '+r.status+' — key not accepted. Key saved — not verified.';}else{s.verified=false;save();renderProviders();document.getElementById('test-'+id).textContent='Provider responded '+r.status+'. Key saved — not verified.';}}catch(e){s.verified=false;save();renderProviders();const t=document.getElementById('test-'+id);if(t)t.textContent='Could not reach provider from this browser (network/CORS). Key saved — not verified. This does not claim a fake connection.';}}
 function setTheme(t){state.theme=t;document.body.className=t==='dark'?'dark':'';save();}
 function exportAllData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='vitalize-storynest-data.json';a.click();}
-function clearAllData(){if(!confirm('Delete ALL local StoryNest data in this browser?'))return;localStorage.removeItem(LS);location.reload();}
+function clearAllData(){if(!confirm('Delete ALL local ekiddy.com data in this browser?'))return;localStorage.removeItem(LS);location.reload();}
 
 /* ---------- Init ---------- */
-renderCounts();renderChars();renderHome();renderSimpleHome();renderLibrary();renderProjects();renderDashboard();renderAdmin();renderProviders();
+renderCounts();renderChars();renderHome();renderSimpleHome();renderLibrary();renderProjects();renderDashboard();renderAdmin();renderProviders();hydrateAll();
 if(state.theme==='dark')document.body.className='dark';

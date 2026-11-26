@@ -1,4 +1,4 @@
-# Vitalize StoryNest
+# ekiddy.com
 
 **AI Children's Storytelling Studio — free, unlimited, private.**
 

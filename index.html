@@ -3,26 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Vitalize StoryNest — AI Children's Storytelling Studio</title>
-<meta name="description" content="Vitalize StoryNest: create picture books, animations, music videos and comics for children. Free, unlimited, private — everything runs in your browser.">
+<title>ekiddy.com — Where Little Ideas Become Big Stories</title>
+<meta name="description" content="ekiddy.com: create picture books, animations, music videos and comics for children. Free, unlimited, private — everything runs in your browser.">
 <meta name="theme-color" content="#0f766e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="StoryNest">
+<meta name="apple-mobile-web-app-title" content="ekiddy">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="styles.css?v=14">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="hero.css?v=14">
 <link rel="stylesheet" href="hero-bg.css?v=14">
+<link rel="stylesheet" href="logo.css?v=14">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body class="on-home">
 <div id="authGate" class="auth-modal" role="dialog" aria-modal="true" aria-label="Sign in with Google">
   <div class="gate-card">
-    <div class="gate-logo">📖✦</div>
-    <h1>Vitalize StoryNest</h1>
-    <p class="gate-sub">AI Children’s Storytelling Studio</p>
+    <div class="gate-logo brand-logo" role="img" aria-label="ekiddy — Where Little Ideas Become Big Stories"></div>
+    <h1>ekiddy.com</h1>
+    <p class="gate-sub">Where Little Ideas Become Big Stories</p>
     <p>Sign in with Google to continue.</p>
     <button class="google-btn" id="googleSignInBtn" type="button" onclick="startGoogleSignIn()"><span class="g-logo">G</span><span id="googleBtnLabel">Continue with Google</span></button>
     <p id="authError" class="error-text" style="display:none"></p>
@@ -31,7 +32,7 @@
   </div>
 </div>
 <header class="topbar">
-  <div class="brand"><span class="logo">📖✦</span><div><strong>Vitalize StoryNest</strong><small>AI Children's Storytelling Studio</small></div></div>
+  <div class="brand"><span class="brand-logo" role="img" aria-label="ekiddy — Where Little Ideas Become Big Stories"></span></div>
   <button class="menu-btn" id="menuBtn" aria-label="Open menu" onclick="toggleMenu()">☰</button>
   <nav id="nav">
     <button data-page="home" class="active">Home</button>
@@ -371,7 +372,7 @@
   <button data-page="library" onclick="go('library')">📖<span>Library</span></button>
   <button data-page="projects" onclick="go('projects')">🗂<span>Projects</span></button>
 </nav>
-<footer><p>Vitalize StoryNest — original content only. Built-in engine, unlimited private use. <a href="https://github.com/vv-team-codes/vitalize-storynest">GitHub: vv-team-codes/vitalize-storynest</a></p></footer>
+<footer><p>ekiddy.com — original content only. Built-in engine, unlimited private use. <a href="https://github.com/vv-team-codes/vitalize-storynest">GitHub: vv-team-codes/vitalize-storynest</a></p></footer>
 <script>
 /* v10: ask the service worker for an update on every load. If a new worker
    takes control, reload once per session so a stale cached gate can never

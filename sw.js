@@ -1,4 +1,4 @@
-/* Vitalize StoryNest service worker — offline app shell (v14).
+/* ekiddy.com service worker — offline app shell (v14).
    v11: same network-first worker as v8, cache name + asset versions
    bumped so a stale v9 shell can never be served again.
    v13: cache name + asset versions bumped to v14. */
