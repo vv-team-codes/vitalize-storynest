@@ -1,63 +1,62 @@
-/* Landing hero — rebuilt in pure CSS from the user's own design (v7).
-   No image here: no JPG, no data-URI, no background-image. The sunset sky,
-   sun, clouds, hills, river, flowers, tree + treehouse (left) and castle
-   (right) are all CSS shapes; the nav, headline, button and 4 feature
-   cards are real DOM in index.html. */
-.landing-hero{aspect-ratio:auto;min-height:660px;background:linear-gradient(180deg,#232a6e 0%,#5b4b9e 26%,#c86b9a 46%,#f7a072 60%,#ffd27d 70%,#9ccc65 80%,#4caf50 100%)}
-.hero-scene{position:absolute;inset:0;overflow:hidden;z-index:1}
-.hs-sun{position:absolute;left:52%;top:47%;width:92px;height:92px;border-radius:50%;background:radial-gradient(circle,#fff7cc,#ffd76a 60%,#ffb347);box-shadow:0 0 70px 24px rgba(255,200,90,.65);z-index:1}
-.hs-cloud{position:absolute;background:#fff;opacity:.88;border-radius:999px;box-shadow:34px 10px 0 #fff,-34px 12px 0 #fff;z-index:1}
-.hs-cloud.c1{width:110px;height:30px;top:13%;left:56%}
-.hs-cloud.c2{width:90px;height:26px;top:9%;left:78%}
-.hs-cloud.c3{width:80px;height:24px;top:20%;left:38%}
-.hs-hill{position:absolute;bottom:0;z-index:2}
-.hs-hill.h1{left:-6%;width:62%;height:130px;background:#66bb6a;border-radius:50% 50% 0 0}
-.hs-hill.h2{right:-6%;width:56%;height:105px;background:#4caf50;border-radius:50% 50% 0 0}
-.hs-river{position:absolute;right:0;bottom:19%;width:44%;height:44px;background:linear-gradient(90deg,#7dd3fc,#38bdf8);border-radius:50% 0 0 50%;opacity:.92;z-index:2}
-.hs-castle{position:absolute;right:5%;top:24%;width:180px;height:130px;z-index:3}
-.hs-castle .castle-base{position:absolute;bottom:0;left:0;width:100%;height:44px;background:#7e6aa8;border-radius:8px 8px 0 0}
-.hs-castle .tower{position:absolute;bottom:30px;width:36px;background:#8b7bb8;border-radius:6px 6px 0 0}
-.hs-castle .tower::before{content:"";position:absolute;top:-26px;left:-6px;border-left:24px solid transparent;border-right:24px solid transparent;border-bottom:28px solid #5b4b8f}
-.hs-castle .tower::after{content:"";position:absolute;top:14px;left:13px;width:8px;height:12px;background:#ffd76a;border-radius:4px 4px 0 0}
-.hs-castle .t1{left:6px;height:64px}
-.hs-castle .t2{left:72px;height:88px}
-.hs-castle .t3{right:6px;height:58px}
-.hs-tree{position:absolute;left:0;top:0;width:40%;height:72%;z-index:3}
-.hs-canopy{position:absolute;left:2%;top:0;width:96%;height:52%;background:radial-gradient(circle at 30% 40%,#66bb6a 0 34%,transparent 35%),radial-gradient(circle at 62% 28%,#4caf50 0 38%,transparent 39%),radial-gradient(circle at 82% 48%,#81c784 0 28%,transparent 29%),radial-gradient(circle at 48% 58%,#43a047 0 32%,transparent 33%)}
-.hs-trunk{position:absolute;left:20%;bottom:0;width:58px;height:58%;background:linear-gradient(#6b4226,#8b5a2b);border-radius:40px 40px 0 0;transform:rotate(-4deg)}
-.hs-treehouse{position:absolute;left:13%;top:40%;width:128px;height:92px;background:#a06a35;border:3px solid #7a4a22;border-radius:10px;z-index:4}
-.hs-treehouse::before{content:"";position:absolute;top:-40px;left:-14px;border-left:78px solid transparent;border-right:78px solid transparent;border-bottom:42px solid #6b4226}
-.hs-treehouse .win{position:absolute;top:16px;width:26px;height:32px;background:#ffd76a;border-radius:6px;box-shadow:0 0 14px #ffd76a}
-.hs-treehouse .w1{left:14px}
-.hs-treehouse .w2{right:14px}
-.hs-treehouse .balcony{position:absolute;bottom:-16px;left:-10px;right:-10px;height:14px;background:#7a4a22;border-radius:4px}
-.hs-ladder{position:absolute;left:24%;top:64%;width:26px;height:26%;background:repeating-linear-gradient(#8b5a2b 0 6px,transparent 6px 16px);border-left:4px solid #8b5a2b;border-right:4px solid #8b5a2b;z-index:3}
-.hs-figures{position:absolute;left:34%;bottom:9%;width:120px;height:74px;z-index:4}
-.hs-boy{position:absolute;left:0;bottom:0;width:56px;height:70px}
-.hs-boy::before{content:"";position:absolute;left:12px;top:0;width:30px;height:30px;border-radius:50%;background:#f2c89b;box-shadow:0 -4px 0 2px #3a2a1e}
-.hs-boy::after{content:"";position:absolute;left:6px;top:32px;width:42px;height:36px;background:#7c5cbf;border-radius:12px 12px 6px 6px}
-.hs-dog{position:absolute;right:0;bottom:0;width:52px;height:44px}
-.hs-dog::before{content:"";position:absolute;left:6px;bottom:0;width:42px;height:26px;background:#fff;border:2px solid #d8b48a;border-radius:50%}
-.hs-dog::after{content:"";position:absolute;right:2px;top:0;width:24px;height:22px;background:#fff;border:2px solid #d8b48a;border-radius:50%}
-.hs-flowers{position:absolute;left:0;right:0;bottom:0;height:26px;z-index:4;background-image:radial-gradient(circle,#ff6b9d 3px,transparent 4px),radial-gradient(circle,#ffd23f 3px,transparent 4px),radial-gradient(circle,#c084fc 3px,transparent 4px);background-size:46px 26px,60px 26px,72px 26px;background-position:0 6px,12px 14px,24px 4px}
-.hero-content{position:relative;z-index:5;text-align:center;padding:118px 20px 0;color:#fff}
-.hero-content h1{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:52px;line-height:1.12;margin:0 0 14px;text-shadow:0 3px 16px rgba(20,20,60,.55)}
-.hero-content p{font-size:19px;margin:0 0 22px;text-shadow:0 2px 10px rgba(20,20,60,.55)}
-.hero-cta{background:#fbbf24;color:#1c2b2a;border:none;padding:16px 34px;border-radius:999px;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.28)}
-.hero-cta:hover{background:#fcd34d}
-.hero-cards{position:relative;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:780px;margin:44px auto 26px;padding:0 16px}
-.hero-card{background:rgba(255,255,255,.94);border:none;border-radius:18px;padding:18px 10px;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.2);color:#1c2b2a}
-.hero-card strong{font-size:16px}
-.hero-card span:last-child{font-size:13px;color:#5f6f6d}
-.hc-icon{font-size:34px;line-height:1}
-@media(max-width:860px){
-  .landing-hero{min-height:0}
-  .hero-content{padding-top:96px}
-  .hero-content h1{font-size:34px}
+/* Vitalize StoryNest — welcome hero (v8).
+   The hero scene is the user's own design-3 image (see hero-bg.css for the
+   background). Nav, headline, button and 4 feature cards are real DOM in
+   index.html. Gentle animations only: twinkling stars, sun-glow pulse,
+   lantern flicker, headline fade-in, CTA soft pulse, cards sliding in.
+   All animations are disabled under prefers-reduced-motion. */
+.welcome-hero{min-height:100vh;min-height:100svh;position:relative;isolation:isolate;overflow:hidden;background-color:#081a43;background-size:cover;background-position:center 32%;background-repeat:no-repeat;display:flex;flex-direction:column}
+.welcome-hero::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(4,13,40,.28),transparent 22%,transparent 68%,rgba(4,20,37,.45));pointer-events:none}
+.hero-glow{position:absolute;left:44%;top:56%;width:300px;height:180px;z-index:1;background:radial-gradient(ellipse at center,rgba(255,214,106,.75),rgba(255,179,71,.28) 55%,transparent 75%);filter:blur(6px);pointer-events:none;animation:glowPulse 4s ease-in-out infinite}
+.hero-lantern{position:absolute;left:31.5%;top:29%;width:34px;height:44px;z-index:1;background:radial-gradient(circle,rgba(255,214,106,.95),rgba(255,179,71,.25) 70%,transparent);border-radius:50%;filter:blur(2px);pointer-events:none;animation:flicker 2.8s ease-in-out infinite}
+.sparkles{position:absolute;inset:0;z-index:2;pointer-events:none}
+.sparkles span{position:absolute;color:#fff7cc;font-size:20px;text-shadow:0 0 12px #ffd76a;animation:twinkle 3.2s ease-in-out infinite}
+.sparkles span:nth-child(1){left:12%;top:16%;animation-delay:0s}
+.sparkles span:nth-child(2){left:30%;top:10%;animation-delay:.7s;font-size:15px}
+.sparkles span:nth-child(3){left:56%;top:20%;animation-delay:1.3s;font-size:24px}
+.sparkles span:nth-child(4){left:72%;top:9%;animation-delay:.4s;font-size:15px}
+.sparkles span:nth-child(5){left:86%;top:28%;animation-delay:1.8s}
+.sparkles span:nth-child(6){left:44%;top:7%;animation-delay:2.2s;font-size:14px}
+@keyframes twinkle{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes glowPulse{0%,100%{opacity:.65;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes flicker{0%,100%{opacity:.85}25%{opacity:.6}50%{opacity:1}75%{opacity:.7}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ctaPulse{0%,100%{box-shadow:0 8px 0 #b67c12,0 14px 30px rgba(11,22,62,.4)}50%{box-shadow:0 8px 0 #b67c12,0 14px 34px rgba(11,22,62,.55);transform:translateY(-2px)}}
+.hero-content{position:relative;z-index:3;width:min(760px,52%);margin:11vh 0 0 42%;text-align:center;color:#fff;animation:fadeUp .7s ease both}
+.hero-content h1{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:500;font-size:clamp(42px,5.3vw,78px);line-height:1.02;letter-spacing:-2px;margin:0 0 14px;text-shadow:0 4px 20px rgba(9,26,71,.65)}
+.hero-content h1 em{font-family:Georgia,serif;font-weight:500}
+.scribble{color:#ffd52e;font-size:52px;line-height:.5;margin-bottom:20px;text-shadow:0 2px 10px #f7bd25}
+.hero-content p{font-size:clamp(17px,1.5vw,23px);line-height:1.5;max-width:600px;margin:0 auto 28px;text-shadow:0 2px 12px #091a47;animation:fadeUp .7s .15s ease both}
+.hero-cta{background:linear-gradient(180deg,#ffe34d,#ffc928);color:#11152b;border:0;padding:19px 42px;border-radius:38px;font-size:20px;font-weight:850;cursor:pointer;animation:fadeUp .7s .3s ease both,ctaPulse 2.6s 1.2s ease-in-out infinite}
+.hero-cta:hover{transform:translateY(-3px)}
+.hero-cards{position:relative;z-index:3;width:min(880px,90%);margin:auto auto 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:14px;border:1px solid rgba(255,255,255,.6);border-radius:34px;background:rgba(30,37,65,.48);backdrop-filter:blur(16px);box-shadow:0 15px 50px rgba(7,19,45,.33)}
+.hero-card{border:none;border-radius:25px;padding:16px 10px 14px;text-align:center;color:#111a3a;min-height:145px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.72);animation:fadeUp .6s ease both}
+.hero-card:nth-child(1){background:linear-gradient(145deg,#fff,#d9d8ff);animation-delay:.35s}
+.hero-card:nth-child(2){background:linear-gradient(145deg,#fff0bd,#ffda73);animation-delay:.45s}
+.hero-card:nth-child(3){background:linear-gradient(145deg,#e5f5ff,#a9d8ff);animation-delay:.55s}
+.hero-card:nth-child(4){background:linear-gradient(145deg,#ffe3f0,#ffb6d2);animation-delay:.65s}
+.hero-card:hover{transform:translateY(-3px)}
+.hero-card strong{font-size:17px}
+.hero-card span:last-child{font-size:13px;line-height:1.3;margin-top:5px;max-width:150px}
+.hc-icon{font-size:43px;line-height:1.1;margin-bottom:8px;filter:drop-shadow(0 4px 3px rgba(108,59,155,.27))}
+@media(max-width:900px){
+  .welcome-hero{background-position:38% center}
+  .hero-content{width:90%;margin:9vh auto 0}
+  .hero-content h1{font-size:clamp(38px,8vw,64px)}
+  .hero-cards{width:94%;gap:7px;padding:8px;border-radius:22px}
+  .hero-card{min-height:118px;padding:10px 5px;border-radius:16px}
+  .hc-icon{font-size:30px}.hero-card strong{font-size:13px}.hero-card span:last-child{font-size:11px}
+}
+@media(max-width:520px){
+  .welcome-hero{min-height:940px;background-position:34% center}
+  .hero-content{margin-top:48px;width:94%;padding:18px 12px;background:rgba(5,17,48,.22);border-radius:24px;backdrop-filter:blur(3px)}
+  .hero-content h1{font-size:43px;letter-spacing:-1.6px}
   .hero-content p{font-size:16px}
-  .hero-cards{grid-template-columns:repeat(2,1fr);margin-top:28px}
-  .hs-castle{transform:scale(.68);transform-origin:top right}
-  .hs-tree{width:58%}
-  .hs-figures{left:44%}
-  .hs-sun{left:60%;top:52%;width:64px;height:64px}
+  .hero-cta{font-size:16px;padding:15px 25px}
+  .hero-cards{grid-template-columns:repeat(2,1fr);width:92%}
+  .hero-card{min-height:110px}
+  .hero-glow{left:30%;top:60%}
+  .hero-lantern{left:26%;top:24%}
+}
+@media(prefers-reduced-motion:reduce){
+  .welcome-hero *,.welcome-hero{animation:none!important}
 }

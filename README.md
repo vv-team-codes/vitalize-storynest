@@ -50,3 +50,15 @@ The hosted Muse artifact uses the same model with server storage; this standalon
 - `styles.css` — indigo-violet + coral-amber + cream theme
 - `app.js` — story engine, Character Bible, SVG illustration generator, editor, reader, storyboard + built-in video renderer, music/comic generators, providers, localStorage persistence
 - `README.md` — this file
+
+## v8 — Welcome-first (26 Nov 2026)
+Opening the site shows ONLY the welcome page: the user's own design-3 hero
+image (optimised JPEG, 351 KB, in `hero-bg.css` — the GitHub connector only
+pushes text files, so no binary `hero.jpg` could be uploaded that way),
+animated sparkles / sun glow / lantern flicker, headline, Create Your Story
+button and the 4 feature cards. Every tap opens the real Firebase Google
+sign-in. Stats, How-it-works, samples, projects and settings stay hidden
+until sign-in. After sign-in the home is a simple 1-2-3 flow: big Create a
+story button, 4 big choices, then your stories as a simple list. All
+features (picture book generator, Character Bible, built-in video renderer,
+PDF export, unlimited generation) are unchanged behind the simple surface.

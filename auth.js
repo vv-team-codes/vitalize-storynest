@@ -140,7 +140,7 @@
       auth.onAuthStateChanged(function (user) {
         currentUser = user || null;
         if (user) {
-          clearError(); hideGate(); setLocked(false); renderUser(user);
+          clearError(); hideGate(); setLocked(false); renderUser(user); if(window.renderSimpleHome) window.renderSimpleHome();
           if (pendingPage) { var p = pendingPage; pendingPage = null; setTimeout(function () { if (window.go) window.go(p); }, 50); }
         } else {
           setLocked(true); renderUser(null);

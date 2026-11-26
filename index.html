@@ -11,9 +11,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="StoryNest">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="hero.css?v=7">
+<link rel="stylesheet" href="hero.css?v=8">
+<link rel="stylesheet" href="hero-bg.css?v=8">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body class="on-home">
@@ -53,48 +54,48 @@
 
 <!-- HOME -->
 <section class="page active" id="page-home">
-  <div class="landing-hero">
-    <div class="hero-scene" aria-hidden="true">
-      <div class="hs-sun"></div>
-      <div class="hs-cloud c1"></div>
-      <div class="hs-cloud c2"></div>
-      <div class="hs-cloud c3"></div>
-      <div class="hs-castle"><span class="tower t1"></span><span class="tower t2"></span><span class="tower t3"></span><span class="castle-base"></span></div>
-      <div class="hs-hill h1"></div>
-      <div class="hs-hill h2"></div>
-      <div class="hs-river"></div>
-      <div class="hs-tree">
-        <div class="hs-canopy"></div>
-        <div class="hs-trunk"></div>
-        <div class="hs-treehouse"><span class="win w1"></span><span class="win w2"></span><span class="balcony"></span></div>
-        <div class="hs-ladder"></div>
-      </div>
-      <div class="hs-figures"><span class="hs-boy"></span><span class="hs-dog"></span></div>
-      <div class="hs-flowers"></div>
-    </div>
+  <div class="welcome-hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-lantern" aria-hidden="true"></div>
+    <div class="sparkles" aria-hidden="true"><span>✦</span><span>✦</span><span>✦</span><span>✦</span><span>✦</span><span>✦</span></div>
     <div class="hero-content">
-      <h1>Build Magical Stories<br>for Curious Minds</h1>
-      <p>Create, animate and share unique stories for children with the power of AI.</p>
+      <h1><em>Build Magical Stories<br>for Curious Minds</em> ✨</h1>
+      <div class="scribble" aria-hidden="true">━━━━━━━━━━━━</div>
+      <p>Create, animate and share unique stories<br>for children with the power of AI.</p>
       <button class="hero-cta" type="button" onclick="go('book')">Create Your Story <span aria-hidden="true">&rarr;</span></button>
     </div>
     <div class="hero-cards">
-      <button class="hero-card" type="button" onclick="go('book')"><span class="hc-icon" aria-hidden="true">&#128214;</span><strong>Picture Book</strong><span>Create illustrated story books</span></button>
-      <button class="hero-card" type="button" onclick="go('animation')"><span class="hc-icon" aria-hidden="true">&#127916;</span><strong>Animation</strong><span>Bring stories to life</span></button>
-      <button class="hero-card" type="button" onclick="go('music')"><span class="hc-icon" aria-hidden="true">&#127925;</span><strong>Music Video</strong><span>Add music to your story</span></button>
-      <button class="hero-card" type="button" onclick="go('comic')"><span class="hc-icon" aria-hidden="true">&#128172;</span><strong>Comic</strong><span>Create fun comic stories</span></button>
+      <button class="hero-card" type="button" onclick="go('book')"><span class="hc-icon" aria-hidden="true">📖</span><strong>Picture Book</strong><span>Create illustrated story books</span></button>
+      <button class="hero-card" type="button" onclick="go('animation')"><span class="hc-icon" aria-hidden="true">🎬</span><strong>Animation</strong><span>Bring stories to life</span></button>
+      <button class="hero-card" type="button" onclick="go('music')"><span class="hc-icon" aria-hidden="true">🎵</span><strong>Music Video</strong><span>Add music to your story</span></button>
+      <button class="hero-card" type="button" onclick="go('comic')"><span class="hc-icon" aria-hidden="true">💬</span><strong>Comic</strong><span>Create fun comic stories</span></button>
     </div>
   </div>
-  <div class="grid3" id="homeStats"></div>
-  <h2>How it works</h2>
-  <div class="grid3">
-    <div class="card"><h3>1 &middot; Idea</h3><p>Type an idea, paste a manuscript, upload a .txt file, or pick a suggested idea.</p></div>
-    <div class="card"><h3>2 &middot; Story &amp; Characters</h3><p>Pick age, type, language and pages. The engine writes the title, moral, characters and page-by-page text. The Character Bible locks face, hair, outfit and colours so every picture matches.</p></div>
-    <div class="card"><h3>3 &middot; Illustrate &amp; Export</h3><p>Generate a picture for every page in 10 styles, edit in the book editor, read aloud, and export a watermark-free PDF.</p></div>
-  </div>
-  <h2>Sample books in this browser</h2>
-  <div class="grid3" id="homeSamples"></div>
-</section>
 
+  <div id="simpleHome">
+    <h2>Welcome back — let's make a story</h2>
+    <p class="muted">Just 3 easy steps. No confusing menus.</p>
+    <button class="big-cta" type="button" onclick="go('book')">1 · Create a story →</button>
+    <h3>2 · Pick what to make</h3>
+    <div class="simple-choices">
+      <button type="button" onclick="go('book')"><span class="sc-icon" aria-hidden="true">📚</span><strong>Picture Book</strong><span>A story book with pictures</span></button>
+      <button type="button" onclick="go('animation')"><span class="sc-icon" aria-hidden="true">🎬</span><strong>Animation</strong><span>A moving video story</span></button>
+      <button type="button" onclick="go('music')"><span class="sc-icon" aria-hidden="true">🎵</span><strong>Music Video</strong><span>A song with pictures</span></button>
+      <button type="button" onclick="go('comic')"><span class="sc-icon" aria-hidden="true">💬</span><strong>Comic</strong><span>A fun comic story</span></button>
+    </div>
+    <h3>3 · Your stories</h3>
+    <div id="simpleProjects"></div>
+    <div class="simple-more">
+      <button type="button" onclick="go('projects')">My Projects</button>
+      <button type="button" onclick="go('library')">Library</button>
+      <button type="button" onclick="go('dashboard')">Dashboard</button>
+      <button type="button" onclick="go('settings')">Settings</button>
+      <button type="button" onclick="go('admin')">Admin</button>
+      <button type="button" onclick="go('pricing')">Pricing — Free</button>
+      <button type="button" onclick="installApp()">📲 Install app</button>
+    </div>
+  </div>
+</section>
 
 <!-- PRICING -->
 <section class="page" id="page-pricing">
@@ -308,14 +309,14 @@
 </nav>
 <footer><p>Vitalize StoryNest — original content only. Built-in engine, unlimited private use. <a href="https://github.com/vv-team-codes/vitalize-storynest">GitHub: vv-team-codes/vitalize-storynest</a></p></footer>
 <script>
-/* v6: ask the service worker for an update on every load. If a new worker
+/* v8: ask the service worker for an update on every load. If a new worker
    takes control, reload once per session so a stale cached gate can never
    stick on first load. (First-ever visit: no old worker, no reload.) */
 (function(){if(!('serviceWorker' in navigator))return;try{navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update();});navigator.serviceWorker.addEventListener('controllerchange',function(){if(sessionStorage.getItem('vsn-sw-reload'))return;try{sessionStorage.setItem('vsn-sw-reload','1');}catch(e){}location.reload();});}catch(e){}})();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="auth.js?v=7"></script>
-<script src="app.js?v=7"></script>
+<script src="auth.js?v=8"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

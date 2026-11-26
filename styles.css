@@ -143,3 +143,36 @@ body.on-home main{padding-top:0}
 .landing-hero::before{content:"";position:absolute;left:0;right:0;top:0;height:12%;background:linear-gradient(rgba(8,20,32,.62),rgba(8,20,32,0));pointer-events:none;z-index:0}
 .landing-hero .hotspot{z-index:1}
 #nav button:not(.active){background:rgba(15,118,110,.45);text-shadow:0 1px 3px rgba(0,0,0,.55)}
+
+/* ---- v8: welcome-only while signed out; simple signed-in home ----
+   Signed out, the visitor sees ONLY the welcome hero (nav, headline,
+   CTA, 4 cards). Stats, How-it-works, samples, bottom nav, footer and
+   the project/character pills are hidden until Google sign-in. After
+   sign-in the top bar is simplified to Home + your account, and the
+   simple 1-2-3 flow on Home is the way in. */
+#simpleHome{display:none;max-width:1080px;margin:0 auto;padding:30px 22px 10px}
+body.signed-in #simpleHome{display:block}
+body:not(.signed-in) #bottomnav{display:none!important}
+body:not(.signed-in) footer{display:none}
+body:not(.signed-in) #countPill,body:not(.signed-in) #limitPill,body:not(.signed-in) #moreBtn,body:not(.signed-in) #installBtn,body:not(.signed-in) #moreMenu{display:none!important}
+body.signed-in #nav button[data-page="book"],body.signed-in #nav button[data-page="animation"],body.signed-in #nav button[data-page="library"],body.signed-in #nav button[data-page="pricing"]{display:none}
+body.signed-in #moreBtn,body.signed-in #installBtn{display:none}
+body.on-home main{max-width:none;padding:0 0 22px}
+.big-cta{display:block;width:100%;max-width:640px;margin:14px auto 8px;padding:20px 28px;border:none;border-radius:20px;background:linear-gradient(90deg,#0f766e,#f59e0b);color:#fff;font-size:22px;font-weight:800;cursor:pointer;min-height:64px;box-shadow:0 8px 22px rgba(15,118,110,.25)}
+.big-cta:hover{transform:translateY(-2px)}
+.simple-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:12px 0 6px}
+.simple-choices button{background:#fff;border:1px solid var(--border);border-radius:20px;padding:22px 14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;min-height:150px;box-shadow:0 4px 16px rgba(15,118,110,.08);color:var(--ink)}
+.simple-choices button:hover{transform:translateY(-2px)}
+.simple-choices strong{font-size:19px}
+.simple-choices span:last-child{font-size:14px;color:var(--muted)}
+.sc-icon{font-size:44px;line-height:1}
+.simple-row{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin:10px 0}
+.simple-row strong{font-size:17px}
+.simple-more{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 8px}
+.simple-more button{background:#fff;border:1px solid #d6cfae;color:#0f766e;padding:10px 16px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:600;min-height:44px}
+@media(max-width:860px){
+  body:not(.signed-in) #nav{display:flex;order:4;flex-basis:100%;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;background:rgba(8,20,32,.35);border-radius:14px;padding:6px}
+  body:not(.signed-in) #nav button{white-space:nowrap;border:none;flex:0 0 auto}
+  body:not(.signed-in) .menu-btn{display:none}
+  .big-cta{font-size:19px}
+}
