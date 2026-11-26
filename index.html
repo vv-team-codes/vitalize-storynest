@@ -11,11 +11,22 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="StoryNest">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
-<body>
+<body class="locked">
+<div id="authGate" role="dialog" aria-modal="true" aria-label="Sign in with Google">
+  <div class="gate-card">
+    <div class="gate-logo">📖✦</div>
+    <h1>Vitalize StoryNest</h1>
+    <p class="gate-sub">AI Children’s Storytelling Studio</p>
+    <p>Sign in with Google to continue. Every tap on this site opens Google sign-in — there is no guest access.</p>
+    <button class="google-btn" id="googleSignInBtn" type="button" onclick="startGoogleSignIn()"><span class="g-logo">G</span><span id="googleBtnLabel">Continue with Google</span></button>
+    <p id="authError" class="error-text" style="display:none"></p>
+    <p class="muted small">Free · Unlimited · Private. Your books stay in your browser.</p>
+  </div>
+</div>
 <header class="topbar">
   <div class="brand"><span class="logo">📖✦</span><div><strong>Vitalize StoryNest</strong><small>AI Children's Storytelling Studio</small></div></div>
   <button class="menu-btn" id="menuBtn" aria-label="Open menu" onclick="toggleMenu()">☰</button>
@@ -31,7 +42,7 @@
     <button data-page="settings">Settings</button>
     <button data-page="admin">Admin</button>
   </nav>
-  <div class="top-right"><span class="pill" id="limitPill">Unlimited · Private</span><span class="pill soft" id="countPill"></span><button class="btn install-btn" id="installBtn" onclick="installApp()">📲 Install app</button></div>
+  <div class="top-right"><span class="pill" id="limitPill">Unlimited · Private</span><span class="pill soft" id="countPill"></span><span id="userChip" style="display:none"><img id="userPhoto" alt="" width="28" height="28"><span id="userName"></span><button type="button" onclick="signOutUser()">Sign out</button></span><button class="btn install-btn" id="installBtn" onclick="installApp()">📲 Install app</button></div>
 </header>
 <main id="app">
 
@@ -41,7 +52,7 @@
     <div>
       <span class="badge">Free · Unlimited · Private — no tokens, no daily limits</span>
       <h1>Every child deserves a story made just for them.</h1>
-      <p>Create picture books, animations, songs and comics in your browser. Stories, characters and illustrations are generated here — no account, no payment, no upload to a server. Your work stays in this browser (localStorage).</p>
+      <p>Create picture books, animations, songs and comics in your browser. Google sign-in is required to continue. No payment, no upload to a server — your work stays in this browser (localStorage).</p>
       <div class="cta-row">
         <button class="btn primary" onclick="go('book')">✨ Create a Picture Book</button>
         <button class="btn" onclick="go('animation')">🎬 Animation Studio</button>
@@ -246,7 +257,7 @@
 <!-- ADMIN -->
 <section class="page" id="page-admin">
   <h1>🛡 Admin Dashboard</h1>
-  <p class="muted">Single local creator profile (this standalone build has no multi-user accounts / Supabase — see README for the hosted data model). Admin controls apply to this browser only.</p>
+  <p class="muted">Google sign-in is required. Each signed-in user works in their own browser (localStorage); this standalone build has no shared server account store. Admin controls apply to this browser only.</p>
   <div class="grid3" id="adminStats"></div>
   <div class="card"><h3>Generation jobs</h3><div id="adminJobs"></div></div>
   <div class="card"><h3>Story templates</h3><div id="adminTemplates"></div></div>
@@ -262,6 +273,9 @@
   <button data-page="projects" onclick="go('projects')">🗂<span>Projects</span></button>
 </nav>
 <footer><p>Vitalize StoryNest — original content only. Built-in engine, unlimited private use. <a href="https://github.com/vv-team-codes/vitalize-storynest">GitHub: vv-team-codes/vitalize-storynest</a></p></footer>
-<script src="app.js?v=3"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="auth.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
