@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitalize StoryNest — AI Children's Storytelling Studio</title>
+<meta name="description" content="Vitalize StoryNest: create picture books, animations, music videos and comics for children. Free, unlimited, private — everything runs in your browser.">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">📖✦</span><div><strong>Vitalize StoryNest</strong><small>AI Children's Storytelling Studio</small></div></div>
+  <nav id="nav">
+    <button data-page="home" class="active">Home</button>
+    <button data-page="book">Picture Book</button>
+    <button data-page="animation">Animation</button>
+    <button data-page="music">Music Video</button>
+    <button data-page="comic">Comic</button>
+    <button data-page="library">Library</button>
+    <button data-page="projects">My Projects</button>
+    <button data-page="dashboard">Dashboard</button>
+    <button data-page="settings">Settings</button>
+    <button data-page="admin">Admin</button>
+  </nav>
+  <div class="top-right"><span class="pill" id="limitPill">Unlimited · Private</span><span class="pill soft" id="countPill"></span></div>
+</header>
+<main id="app">
+
+<!-- HOME -->
+<section class="page active" id="page-home">
+  <div class="hero">
+    <div>
+      <span class="badge">Free · Unlimited · Private — no tokens, no daily limits</span>
+      <h1>Every child deserves a story made just for them.</h1>
+      <p>Create picture books, animations, songs and comics in your browser. Stories, characters and illustrations are generated here — no account, no payment, no upload to a server. Your work stays in this browser (localStorage).</p>
+      <div class="cta-row">
+        <button class="btn primary" onclick="go('book')">✨ Create a Picture Book</button>
+        <button class="btn" onclick="go('animation')">🎬 Animation Studio</button>
+        <button class="btn" onclick="go('music')">🎵 Music Video</button>
+        <button class="btn" onclick="go('comic')">💬 Comic Creator</button>
+      </div>
+      <p class="muted small">Built-in engine only. External AI providers (Runway / Pika / Luma / Kling / Veo, LLM, image, music) are optional in Settings — a key shows “Key saved — not verified” until a live test passes. Nothing here fakes a video or a melody.</p>
+    </div>
+    <div class="hero-art" id="heroArt"></div>
+  </div>
+  <div class="grid3" id="homeStats"></div>
+  <h2>How it works</h2>
+  <div class="grid3">
+    <div class="card"><h3>1 · Idea</h3><p>Type an idea, paste a manuscript, upload a .txt file, or pick a suggested idea.</p></div>
+    <div class="card"><h3>2 · Story &amp; Characters</h3><p>Pick age, type, language and pages. The engine writes the title, moral, characters and page-by-page text. The Character Bible locks face, hair, outfit and colours so every picture matches.</p></div>
+    <div class="card"><h3>3 · Illustrate &amp; Export</h3><p>Generate a picture for every page in 10 styles, edit in the book editor, read aloud, and export a watermark-free PDF.</p></div>
+  </div>
+  <h2>Sample books in this browser</h2>
+  <div class="grid3" id="homeSamples"></div>
+</section>
+
+<!-- BOOK -->
+<section class="page" id="page-book">
+  <h1>📚 AI Picture Book Generator</h1>
+  <p class="muted">Step 1 idea → Step 2 settings → Step 3 generate → Step 4 characters → Step 5 illustrations → Step 6 editor → Step 7 export. Everything saves automatically to My Projects.</p>
+  <div class="steps"><span class="step on" data-s="1">1 Idea</span><span class="step" data-s="2">2 Settings</span><span class="step" data-s="3">3 Story</span><span class="step" data-s="4">4 Characters</span><span class="step" data-s="5">5 Illustrations</span><span class="step" data-s="6">6 Editor</span><span class="step" data-s="7">7 Export</span></div>
+
+  <div class="card"><h3>Step 1 — Story idea</h3>
+    <textarea id="bkIdea" rows="3" placeholder="e.g. Luna the Moon Rabbit finds a glowing lantern and learns to share its light"></textarea>
+    <div class="row">
+      <button class="btn" onclick="suggestIdeas()">💡 Suggested ideas</button>
+      <button class="btn" onclick="randomIdea()">🎲 Random idea</button>
+      <label class="btn file">📄 Upload .txt manuscript <input type="file" id="bkFile" accept=".txt" hidden onchange="uploadManuscript(event)"></label>
+      <button class="btn" onclick="useManuscript()">Use manuscript as idea</button>
+    </div>
+    <div id="ideaList" class="chips"></div>
+    <textarea id="bkManuscript" rows="3" placeholder="Or paste a complete manuscript here (optional)"></textarea>
+  </div>
+
+  <div class="card"><h3>Step 2 — Settings</h3>
+    <div class="form-grid">
+      <label>Age group <select id="bkAge"><option>0–3</option><option>4–6</option><option selected>5–7</option><option>7–9</option><option>9–12</option></select></label>
+      <label>Story type <select id="bkType"><option>Fairy Tale</option><option selected>Adventure</option><option>Bedtime</option><option>Educational</option><option>Fantasy</option><option>Funny</option><option>Moral Story</option><option>Friendship</option><option>Family</option><option>Animals</option></select></label>
+      <label>Language <select id="bkLang"><option value="en" selected>English</option><option value="ta">Tamil</option><option value="hi">Hindi</option><option value="es">Spanish</option><option value="fr">French</option><option value="ar">Arabic</option><option value="zh">Chinese</option><option value="ja">Japanese</option></select></label>
+      <label>Pages <input type="number" id="bkPages" min="4" max="12" value="6"> <span class="muted small">4–12</span></label>
+      <label>Art style <select id="bkStyle"><option>Storybook Illustration</option><option>3D Cartoon</option><option>Pixar-inspired 3D</option><option>Watercolor</option><option>Disney-inspired Fairy Tale</option><option>Anime</option><option>Clay Animation</option><option>Paper Cut</option><option>Hand Drawn</option><option>Digital Painting</option></select></label>
+      <label>Main character name <input id="bkHero" value="Luna"></label>
+    </div>
+    <button class="btn primary" onclick="generateBook()">✨ Generate story (Step 3)</button>
+    <span class="muted small">Built-in story engine — no external key needed. Unlimited.</span>
+  </div>
+
+  <div class="card"><h3>Step 3 — Generated story <span class="muted small">(edit any page — it does not regenerate the whole book)</span></h3>
+    <div id="bookOut"><p class="muted">No book generated yet in this session. Generate one above, or open a saved project.</p></div>
+  </div>
+
+  <div class="card"><h3>Step 4 — Character Bible (consistency lock)</h3>
+    <p class="muted small">The same face, hair, outfit and colours are injected word-for-word into every illustration and video prompt. Change it here and regenerate to apply it everywhere.</p>
+    <div class="form-grid">
+      <label>Name <input id="chName" value="Luna"></label>
+      <label>Species / kind <input id="chKind" value="Moon Rabbit"></label>
+      <label>Face <input id="chFace" value="big brown eyes, round cheeks, gentle smile"></label>
+      <label>Hair / fur <input id="chHair" value="soft white fur, long ears with pink insides"></label>
+      <label>Outfit <input id="chOutfit" value="sky-blue hooded cloak with a small yellow star"></label>
+      <label>Colours <input id="chColors" value="white, sky blue, soft yellow"></label>
+      <label>Accessories <input id="chAcc" value="tiny glowing lantern, yellow flower behind one ear"></label>
+      <label>Expression <input id="chExpr" value="kind, curious"></label>
+    </div>
+    <div class="row"><button class="btn" onclick="saveCharacter()">💾 Save character</button><button class="btn" onclick="applyBible()">Apply Bible to current book</button></div>
+    <div id="charList" class="chips"></div>
+    <div id="bibleOut" class="mono small"></div>
+  </div>
+
+  <div class="card"><h3>Step 5 — Illustrations</h3>
+    <div class="row"><button class="btn primary" onclick="illustrateAll()">🎨 Illustrate all pages</button><button class="btn" onclick="illustrateAll(true)">↻ Regenerate all</button><span class="muted small">Each picture is generated in code from the page's scene brief + Character Bible + chosen style. No stock photo is passed off as generated art.</span></div>
+    <div id="illusOut" class="page-grid"></div>
+  </div>
+
+  <div class="card"><h3>Step 6 — Book editor</h3>
+    <div class="form-grid">
+      <label>Font <select id="edFont" onchange="renderBookOut()"><option>Georgia, serif</option><option>Verdana, sans-serif</option><option>Comic Sans MS, cursive</option><option>Trebuchet MS, sans-serif</option></select></label>
+      <label>Layout <select id="edLayout" onchange="renderBookOut()"><option>Picture on top</option><option>Picture on bottom</option><option>Picture left</option><option>Picture right</option></select></label>
+      <label>Page background <select id="edBg" onchange="renderBookOut()"><option value="#fff8ec">Cream</option><option value="#ffffff">White</option><option value="#eef4ff">Sky tint</option><option value="#f3e8ff">Lavender tint</option><option value="#e6f7ec">Mint tint</option></select></label>
+    </div>
+    <div class="row"><button class="btn" onclick="addPage()">+ Add page</button><button class="btn" onclick="saveCurrentBook()">💾 Save project</button><button class="btn" onclick="go('library')">📖 Open in Reader</button></div>
+    <div id="editorOut"></div>
+  </div>
+
+  <div class="card"><h3>Step 7 — Export</h3>
+    <div class="row">
+      <button class="btn primary" onclick="exportPDF()">⬇ Download PDF (print)</button>
+      <button class="btn" onclick="downloadPageImages()">⬇ Download page images</button>
+      <button class="btn" onclick="downloadStoryText()">⬇ Download story text (.txt)</button>
+      <button class="btn" onclick="shareToLibrary()">↗ Share to Library</button>
+    </div>
+    <p class="muted small">PDF uses your browser's print-to-PDF — no watermark, print-friendly page size. “Download PDF” opens the print dialog; choose “Save as PDF”.</p>
+  </div>
+</section>
+
+<!-- ANIMATION -->
+<section class="page" id="page-animation">
+  <h1>🎬 AI Animation Studio</h1>
+  <p class="muted">Storyboard + continuity-locked, copy-ready video prompts for an external provider — plus a built-in renderer that makes a real MP4/WebM in this browser, no key needed.</p>
+  <div class="card"><h3>Storyboard</h3>
+    <textarea id="anIdea" rows="2" placeholder="e.g. Milo the fox follows a glowing lantern across the meadow"></textarea>
+    <div class="row">
+      <label>Scenes <input type="number" id="anScenes" min="3" max="8" value="4" style="width:70px"></label>
+      <label>Duration <select id="anDur"><option value="15">15s</option><option value="30">30s</option><option value="60" selected>1 min</option><option value="90">1.5 min</option><option value="120">2 min</option></select></label>
+      <label>Ratio <select id="anRatio"><option value="9:16" selected>9:16 (Shorts / Reels)</option><option value="16:9">16:9 (YouTube)</option><option value="1:1">1:1 (Square)</option></select></label>
+      <label>Quality <select id="anQuality"><option value="720p" selected>720p</option><option value="1080p">1080p</option></select></label>
+      <button class="btn primary" onclick="generateStoryboard()">✨ Generate storyboard</button>
+    </div>
+    <div id="bibleNote" class="mono small"></div>
+  </div>
+  <div class="card"><h3>Scenes — continuity lock</h3>
+    <p class="muted small">Each scene lists entry side/direction, start position, end position and exit side/direction. Scene N+1 starts exactly where Scene N ended — no teleporting, no character suddenly appearing from behind.</p>
+    <div id="animOut"><p class="muted">No storyboard yet.</p></div>
+    <div class="row"><button class="btn" onclick="copyAllPrompts()">📋 Copy all video prompts</button></div>
+  </div>
+  <div class="card"><h3>Built-in video renderer (no key needed)</h3>
+    <p class="muted small">Renders your storyboard scenes on a canvas with slow zoom / gentle pan, captions and narration text, and records it with MediaRecorder. The file downloads from this browser. This is a Ken-Burns-style render of your generated illustrations — it is not an external AI video model.</p>
+    <div class="row"><button class="btn primary" id="renderBtn" onclick="renderVideo()">▶ Render video in browser</button><span id="renderStatus" class="muted"></span></div>
+    <video id="animVideo" controls style="width:100%;max-width:480px;display:none"></video>
+    <p class="muted small" id="renderNote"></p>
+  </div>
+  <div class="card"><h3>External video providers</h3><p class="muted small">Configure in Settings → Providers. Runway, Pika, Luma, Kling, Veo — a saved key shows “Key saved — not verified” until Test Connection passes. Copy-ready prompts above are made for pasting into any of them.</p></div>
+</section>
+
+<!-- MUSIC -->
+<section class="page" id="page-music">
+  <h1>🎵 Kids Music Video Creator</h1>
+  <div class="card"><h3>Original song</h3>
+    <div class="form-grid">
+      <label>Song topic <input id="muTopic" value="Brush, wash, smile — brushing teeth"></label>
+      <label>Language <select id="muLang"><option value="en" selected>English</option><option value="ta">Tamil</option><option value="hi">Hindi</option></select></label>
+      <label>Genre <select id="muGenre"><option>Cheerful pop</option><option>Gentle lullaby</option><option>Playful folk</option><option>Upbeat dance</option></select></label>
+    </div>
+    <button class="btn primary" onclick="generateSong()">✨ Generate original lyrics</button>
+    <div id="songOut"></div>
+  </div>
+  <div class="card"><h3>Melody &amp; video</h3>
+    <p><strong>Melody is not rendered in this standalone build.</strong> No music-generation provider is connected, and this app does not fake a melody. Connect a provider in Settings → Providers to enable melody generation; until then you can use the lyrics + scene briefs below with your own music tool.</p>
+    <div id="musicScenes"></div>
+  </div>
+</section>
+
+<!-- COMIC -->
+<section class="page" id="page-comic">
+  <h1>💬 Graphic Novel / Comic Creator</h1>
+  <div class="card"><h3>Comic story</h3>
+    <input id="coIdea" value="Bolt and Pip build a kite that flies to the clouds">
+    <div class="row"><label>Panels <input type="number" id="coPanels" min="4" max="8" value="6" style="width:70px"></label>
+    <label>Layout <select id="coLayout"><option>2 columns</option><option>3 columns</option><option>1 column (strip)</option></select></label>
+    <button class="btn primary" onclick="generateComic()">✨ Generate comic</button></div>
+    <div id="comicOut"></div>
+    <div class="row"><button class="btn" onclick="exportPDF('comic')">⬇ Download comic as PDF (print)</button></div>
+  </div>
+</section>
+
+<!-- LIBRARY -->
+<section class="page" id="page-library">
+  <h1>📖 Storybook Library</h1>
+  <p class="muted">Books shared from My Projects appear here. Click a book to read it.</p>
+  <div id="libraryOut" class="grid3"></div>
+  <div class="card" id="readerCard" style="display:none"><h3 id="readerTitle"></h3><div id="readerOut"></div>
+  <div class="row"><button class="btn" onclick="readerPrev()">← Prev</button><button class="btn" onclick="readAloud()">🔊 Read aloud</button><button class="btn" onclick="readerNext()">Next →</button><button class="btn" onclick="exportPDF()">⬇ PDF</button></div></div>
+</section>
+
+<!-- PROJECTS -->
+<section class="page" id="page-projects">
+  <h1>🗂 My Projects</h1>
+  <div class="row"><button class="btn primary" onclick="go('book')">+ New picture book</button><button class="btn" onclick="go('animation')">+ New animation</button><button class="btn" onclick="go('music')">+ New song</button><button class="btn" onclick="go('comic')">+ New comic</button></div>
+  <div id="projectsOut" class="grid3"></div>
+</section>
+
+<!-- DASHBOARD -->
+<section class="page" id="page-dashboard">
+  <h1>📊 Dashboard</h1>
+  <div class="grid3" id="dashStats"></div>
+  <h2>Recent creations</h2><div id="dashRecent" class="grid3"></div>
+  <h2>Generation history</h2><div id="dashHistory"></div>
+</section>
+
+<!-- SETTINGS -->
+<section class="page" id="page-settings">
+  <h1>⚙️ Settings</h1>
+  <div class="card"><h3>Generation limits</h3><p><strong>Generation limits: None.</strong> Unlimited, private, owner-only generation. No daily caps, no token counting. If this site ever goes public to new users, revisit limits then — do not re-add them on your own for private use.</p>
+  <p class="muted small">Honest note: external providers still have their own credits/billing if you connect one. Unlimited here applies to the built-in engine and built-in renderer.</p></div>
+  <div class="card"><h3>Theme</h3><div class="row"><button class="btn" onclick="setTheme('indigo')">Indigo / Coral (default)</button><button class="btn" onclick="setTheme('light')">Light</button><button class="btn" onclick="setTheme('dark')">Dark</button></div></div>
+  <div class="card"><h3>Providers (optional — external AI)</h3>
+    <p class="muted small">Keys are stored only in this browser (localStorage). They are never sent anywhere by this app except when you press Test Connection, which tries the provider's own endpoint. A saved key shows “Key saved — not verified” until a test passes.</p>
+    <div id="providerList"></div>
+  </div>
+  <div class="card"><h3>Your data</h3><div class="row"><button class="btn" onclick="exportAllData()">⬇ Export all data (.json)</button><button class="btn danger" onclick="clearAllData()">Delete all local data</button></div></div>
+</section>
+
+<!-- ADMIN -->
+<section class="page" id="page-admin">
+  <h1>🛡 Admin Dashboard</h1>
+  <p class="muted">Single local creator profile (this standalone build has no multi-user accounts / Supabase — see README for the hosted data model). Admin controls apply to this browser only.</p>
+  <div class="grid3" id="adminStats"></div>
+  <div class="card"><h3>Generation jobs</h3><div id="adminJobs"></div></div>
+  <div class="card"><h3>Story templates</h3><div id="adminTemplates"></div></div>
+  <div class="card"><h3>Users</h3><p>1 local creator profile. No other users in this standalone build.</p></div>
+</section>
+
+</main>
+<footer><p>Vitalize StoryNest — original content only. Built-in engine, unlimited private use. <a href="https://github.com/vv-team-codes/vitalize-storynest">GitHub: vv-team-codes/vitalize-storynest</a></p></footer>
+<script src="app.js"></script>
+</body>
+</html>

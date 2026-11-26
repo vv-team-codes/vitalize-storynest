@@ -1,37 +1,52 @@
 # Vitalize StoryNest
 
-AI-powered children storytelling platform — picture books, animation studio, kids music videos and comics, with free access (no mandatory subscription).
+**AI Children's Storytelling Studio — free, unlimited, private.**
 
-## What it is
+Create picture books, animations, music videos and comics in your browser. No account, no payment, no daily limits, no token counting.
 
-- **AI Picture Book Generator** — 7-step workflow: idea / manuscript / upload, age group, story type, language, page count, page-by-page editable story, character profiles, per-page illustrations, visual book editor, PDF / page-image export.
-- **AI Animation Studio** — continuity-locked storyboards with a Character Bible, entry/exit continuity, camera rules and copy-ready video prompts; built-in animated-video renderer (duration, aspect ratio and quality selectable) plus optional external video providers (Runway, Pika, Luma, Kling, Google Veo) via Settings.
-- **Kids Music Video Creator** — original song lyrics, scene illustration briefs, captioned video rendering.
-- **Graphic Novel / Comic Creator** — panels, speech bubbles, dialogue, PDF export.
-- **Storybook Library, My Projects, Dashboard, Settings, Admin** — projects can be saved, reopened, edited, duplicated and deleted.
+**Live site (GitHub Pages):** https://vv-team-codes.github.io/vitalize-storynest/
+**Repo:** https://github.com/vv-team-codes/vitalize-storynest
 
-## Brand
+## Run it
 
-Formerly StoryNest Studio. Renamed to **Vitalize StoryNest** (26 Nov 2026) with a full redesign: deep indigo-violet + coral-amber, cream background, bold display typography, theme switcher in Settings (Vitalize / Soft Light).
+No build step. Open `index.html` directly, or serve the folder:
 
-## Video generation
+```bash
+python3 -m http.server 8000
+# then open http://localhost:8000/
+```
 
-- **Built-in renderer (free, no API key):** canvas + MediaRecorder in the browser. Animates the real scene illustrations (slow zoom/pan, crossfades, burned-in narration captions). Duration 15s–2 min (default 1 min), aspect ratios 9:16 / 16:9 / 1:1, quality 720p / 1080p. Finished video is saved on the project for replay/download. Scenes without illustrations are flagged missing, never faked.
-- **External providers (optional):** Runway, Pika, Luma, Kling, Google Veo in Settings → Video Providers, with a real Test Connection. A saved key shows "Key saved — not verified" until a test passes; "Connected" only after a successful test. As of 26 Nov 2026 12:10 IST, no external provider is connected (no key saved, not verified).
-- **Continuity lock:** Character Bible repeated verbatim in every scene prompt, plus per-scene entry/exit, camera/space rules and a negative list (no teleporting, no sudden appearance from behind, no changed clothes/face/colours).
+Or enable GitHub Pages: repo **Settings → Pages → Deploy from a branch → main → / (root)**. The live link is then `https://vv-team-codes.github.io/vitalize-storynest/`.
 
-## Live content (26 Nov 2026, verified in the app)
+## What works (built-in, no key needed)
 
-- 5 projects, 12 characters. Luna the Moon Rabbit (animation, 5 scenes): all 5 scenes illustrated 26 Nov, ready for a built-in video render; no video file rendered yet. Ellie and the Twinkling Fireflies (book, 6 pages): all 6 pages illustrated. No external video provider connected.
+- **Picture Book Generator** — idea / manuscript / `.txt` upload, suggested & random ideas; age 0–3 / 4–6 / 5–7 / 7–9 / 9–12; story types (Fairy Tale, Adventure, Bedtime, Educational, Fantasy, Funny, Moral, Friendship, Family, Animals); 8 languages; 4–12 pages. The built-in engine writes title, description, moral, characters and page-by-page text + scene briefs. Edit or regenerate any single page without regenerating the whole book.
+- **Character Bible** — face, hair/fur, outfit, colours, accessories and expression are saved once and injected word-for-word into every illustration and video prompt, so the same character stays the same.
+- **Illustrations** — a picture is generated in code (procedural SVG) for every page from the scene brief + Character Bible + chosen style (10 styles: Storybook, 3D Cartoon, Pixar-inspired 3D, Watercolor, Disney-inspired Fairy Tale, Anime, Clay, Paper Cut, Hand Drawn, Digital Painting). Regenerate per page, edit the prompt, or upload your own image path via the editor. No stock photo is passed off as generated art.
+- **Book Editor** — fonts, layouts, page backgrounds, add/delete pages, per-page text editing, auto-save to My Projects.
+- **Reader + Export** — read-aloud via the browser SpeechSynthesis API, watermark-free PDF via print-to-PDF, page images and story text download, share to Library.
+- **Animation Studio** — storyboard with a continuity lock: Character Bible + per-scene entry side/direction, start position, end position and exit side/direction, matched scene-to-scene so characters do not teleport or suddenly appear from behind; camera rules and a negative list; copy-ready prompts per scene and for all scenes. **Built-in video renderer** (canvas + MediaRecorder, 15s–2 min, 9:16 / 16:9 / 1:1, 720p / 1080p, captions) renders a real WebM in your browser and downloads it — no key needed. This is a Ken-Burns-style render of your generated illustrations, not an external AI video model.
+- **Music Video Creator** — original lyrics + scene briefs by topic, genre and language. Melody is **not** rendered here: no music provider is connected and this app does not fake one.
+- **Comic Creator** — story, panels, speech bubbles, layouts, PDF via print.
+- **Library, My Projects, Dashboard, Settings, Admin** — save / reopen / duplicate / delete projects, generation history, story templates, job log. All data lives in `localStorage` in your browser.
 
-## Free access / limits
+## Limits: none
 
-Private owner-only use for now: no token/daily limits in the website — free unlimited generation, continuous use. An edit to remove the previous in-app daily limits (20 stories / 60 images / 10 videos per day) was started 26 Nov 2026 12:09 IST and is still running; it is not yet verified live. If new users go public later, limits will be revisited then. External providers still have their own credits/billing if connected — that cannot be bypassed; unlimited applies to the built-in free renderer/image generation.
+**Generation limits: None.** Unlimited, private, owner-only generation. If this site ever goes public to new users, revisit limits then.
 
-## Status — please read
+Honest note: external providers still have their own credits/billing if you connect one. Unlimited here applies to the built-in engine and built-in renderer.
 
-Live as a Muse web app (artifact `ai-storytelling-platform`). **This repository currently contains only this README.** The full app source lives inside the Muse artifact runtime and cannot be pulled out directly, so no full code push has happened yet. This README is kept current with the live app's real state; the full source will be published here once a legitimate export route exists. Do not treat this README as the app's source code.
+## External providers (optional)
 
-## Stack (target)
+Settings → Providers: Runway, Pika, Luma, Kling, Veo, OpenAI. Keys are stored only in this browser. A saved key shows **“Key saved — not verified”** until Test Connection passes against the provider's own endpoint. Nothing here claims a fake render or a fake connection.
 
-React + TypeScript + Tailwind CSS, Supabase (PostgreSQL, Auth, Storage, Edge Functions), configurable LLM / image / TTS / video providers. API keys stay on the backend and are never committed.
+## Data model (hosted equivalent)
+
+The hosted Muse artifact uses the same model with server storage; this standalone build stores the same entities in `localStorage`: `projects`, `stories`/`story_pages`, `characters`, `generated_images` (as data URIs), `animations`, `music_projects`, `comic_projects`, `generation_jobs`/`generation_usage` (history log), `user_settings`. There is no multi-user account / Supabase in this standalone build — it is a single local creator profile. User projects and illustrations created inside the hosted artifact are **not** in this repo; only this source code is.
+
+## Files
+
+- `index.html` — the whole app shell (all pages, GitHub Pages-ready, relative paths only)
+- `styles.css` — indigo-violet + coral-amber + cream theme
+- `app.js` — story engine, Character Bible, SVG illustration generator, editor, reader, storyboard + built-in video renderer, music/comic generators, providers, localStorage persistence
+- `README.md` — this file
