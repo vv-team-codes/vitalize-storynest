@@ -8,7 +8,7 @@ function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.project
 function save(){localStorage.setItem(LS,JSON.stringify(state));renderCounts();}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function uid(){return 'id'+Date.now().toString(36)+Math.floor(Math.random()*999);}
-function go(p){/* v10: defence in depth — while signed out, any navigation past the
+function go(p){try{if('speechSynthesis' in window)speechSynthesis.cancel();}catch(e){}document.body.classList.remove('reading-aloud');/* v10: defence in depth — while signed out, any navigation past the
   welcome hero goes to Google sign-in instead (auth.js capture handler is
   the first line of defence; this stops programmatic go() calls too). */
   if(p!=='home'&&!document.body.classList.contains('signed-in')){if(window.startGoogleSignIn)window.startGoogleSignIn();return;}
@@ -115,7 +115,9 @@ function renderStoryOut(){
 }
 function openStory(id){const b=state.projects.find(p=>p.id===id);if(!b||b.kind!=='story')return;currentStory=b;renderStoryOut();go('story');}
 function saveCurrentStory(){if(!currentStory)return alert('Generate a story first.');const ex=state.projects.findIndex(p=>p.id===currentStory.id);if(ex>=0)state.projects[ex]=currentStory;else state.projects.unshift(currentStory);logHistory('save','Saved story "'+currentStory.title+'"');save();renderProjects();renderSimpleHome();alert('Saved to My Projects.');}
-function readStoryAloud(){if(!currentStory)return alert('Generate a story first.');const u=new SpeechSynthesisUtterance(currentStory.title+'. '+currentStory.chapters.map(c=>'Chapter '+c.n+'. '+c.text).join(' '));u.rate=1;speechSynthesis.cancel();speechSynthesis.speak(u);}
+function syncReadButtons(){var playing=document.body.classList.contains('reading-aloud');document.querySelectorAll('.readaloud-btn').forEach(function(b){b.textContent=playing?'\u23f9 Stop':'\uD83D\uDD0A Read aloud';});}
+function stopReadingAloud(){try{if('speechSynthesis' in window)speechSynthesis.cancel();}catch(e){}document.body.classList.remove('reading-aloud');syncReadButtons();}
+function readStoryAloud(){if(document.body.classList.contains('reading-aloud')){stopReadingAloud();return;}if(!currentStory)return alert('Generate a story first.');const u=new SpeechSynthesisUtterance(currentStory.title+'. '+currentStory.chapters.map(c=>'Chapter '+c.n+'. '+c.text).join(' '));u.rate=1;u.onend=function(){document.body.classList.remove('reading-aloud');syncReadButtons();};u.onerror=function(){document.body.classList.remove('reading-aloud');syncReadButtons();};speechSynthesis.cancel();speechSynthesis.speak(u);document.body.classList.add('reading-aloud');syncReadButtons();}
 function downloadStoryFile(){if(!currentStory)return alert('Generate a story first.');const txt=currentStory.title+'\n'+currentStory.desc+'\nMoral: '+currentStory.moral+'\n\n'+currentStory.chapters.map(c=>'Chapter '+c.n+' — '+c.heading+'\n'+c.text).join('\n\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download=currentStory.title.replace(/\W+/g,'-')+'.txt';a.click();}
 
 /* ---------- Characters ---------- */
@@ -149,18 +151,15 @@ function openReader(id){const b=state.projects.find(p=>p.id===id)||state.library
 function renderReader(){const el=document.getElementById('readerOut');if(!reader.book)return;const p=reader.book.pages[reader.idx];el.innerHTML='<div class="book-page">'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<h3>Page '+p.n+' of '+reader.book.pages.length+'</h3><p style="font-size:19px">'+esc(p.text)+'</p></div>';}
 function readerPrev(){if(reader.idx>0){reader.idx--;renderReader();}}
 function readerNext(){if(reader.book&&reader.idx<reader.book.pages.length-1){reader.idx++;renderReader();}}
-function readAloud(){if(!reader.book)return;const p=reader.book.pages[reader.idx];const u=new SpeechSynthesisUtterance(p.text);u.rate=1;speechSynthesis.cancel();speechSynthesis.speak(u);}
+function readAloud(){if(document.body.classList.contains('reading-aloud')){stopReadingAloud();return;}if(!reader.book)return;const p=reader.book.pages[reader.idx];const u=new SpeechSynthesisUtterance(p.text);u.rate=1;u.onend=function(){document.body.classList.remove('reading-aloud');syncReadButtons();};u.onerror=function(){document.body.classList.remove('reading-aloud');syncReadButtons();};speechSynthesis.cancel();speechSynthesis.speak(u);document.body.classList.add('reading-aloud');syncReadButtons();}
 
 /* ---------- Home / Projects / Dashboard / Admin ---------- */
-function seed(){if(state.projects.length)return;
-  const mk=(title,desc,type,hero,pages)=>({id:uid(),kind:'book',title,desc,moral:MORALS[type]||MORALS.Adventure,age:'5–7',type,lang:'en',pages:pages.map((t,i)=>({n:i+1,text:t,scene:hero+' in a sunny meadow',prompt:'',img:''})),style:'Storybook Illustration',hero,characters:[],created:new Date().toISOString(),shared:true});
-  const ellie=mk('Ellie and the Twinkling Star Path','A baby elephant follows fireflies and learns to share light.','Adventure','Ellie',['Ellie woke up and saw twinkling lights in the garden.','She followed Pip the firefly across the meadow.','Together they found a lantern that glowed for everyone.','Ellie shared the light, and the whole garden smiled.','The stars twinkled a little brighter that night.','Ellie went home happy, knowing sharing makes light grow.']);
-  const luna=mk('Luna the Moon Rabbit','Luna finds a glowing lantern and learns to share.','Bedtime','Luna',['Luna hopped under the moon and found a lantern.','The lantern glowed softly, just for her.','She met a sleepy owl who had lost his way.','Luna shared her light so the owl could find home.','The moon smiled down at them both.']);
-  ellie.pages.forEach(p=>p.img=makeSVG(p,'Storybook Illustration'));luna.pages.forEach(p=>p.img=makeSVG(p,'Watercolor'));
-  state.projects=[ellie,luna];state.library=[ellie,luna];
-  state.characters=[{id:uid(),name:'Luna',kind:'Moon Rabbit',face:'big brown eyes, round cheeks',hair:'soft white fur, long ears with pink insides',outfit:'sky-blue hooded cloak with a yellow star',colors:'white, sky blue, soft yellow',acc:'tiny glowing lantern, yellow flower',expr:'kind, curious'},{id:uid(),name:'Ellie',kind:'Baby Elephant',face:'big brown eyes, rosy cheeks',hair:'soft grey skin, tiny tuft',outfit:'yellow flower behind one ear',colors:'grey, soft yellow, pink',acc:'yellow flower',expr:'gentle, brave'}];
-  save();
-}
+/* v11: NO auto-seed. A fresh user starts EMPTY (0 projects, 0 characters)
+   until they create something themselves. Luna / Ellie / Milo live on only
+   as idea suggestions (IDEAS) and placeholder text in the idea fields —
+   they are never created as projects or characters here. Existing users
+   keep whatever is already saved in their browser (load() restores it). */
+function seed(){}
 function renderHome(){const el=document.getElementById('homeStats');if(el)el.innerHTML='<div class="card"><h3>'+state.projects.length+'</h3><p>Projects in this browser</p></div><div class="card"><h3>'+state.characters.length+'</h3><p>Saved characters</p></div><div class="card"><h3>Unlimited</h3><p>Generation — no daily limits</p></div>';
   const h=document.getElementById('heroArt');if(h&&current)h.innerHTML='';if(h)h.innerHTML='<img src="'+makeSVG({scene:'Luna the Moon Rabbit with a glowing lantern',text:'StoryNest'},'Storybook Illustration')+'" alt="StoryNest illustration">';
   const s=document.getElementById('homeSamples');if(s)s.innerHTML=state.projects.slice(0,3).map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||'')+'</p><button class="btn" onclick="openReader(\''+b.id+'\')">📖 Read</button></div>').join('')||'<p class="muted">No samples yet.</p>';
@@ -317,5 +316,5 @@ function exportAllData(){const a=document.createElement('a');a.href=URL.createOb
 function clearAllData(){if(!confirm('Delete ALL local StoryNest data in this browser?'))return;localStorage.removeItem(LS);location.reload();}
 
 /* ---------- Init ---------- */
-seed();renderCounts();renderChars();renderHome();renderSimpleHome();renderLibrary();renderProjects();renderDashboard();renderAdmin();renderProviders();
+renderCounts();renderChars();renderHome();renderSimpleHome();renderLibrary();renderProjects();renderDashboard();renderAdmin();renderProviders();
 if(state.theme==='dark')document.body.className='dark';
