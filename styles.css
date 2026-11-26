@@ -231,3 +231,60 @@ body.signed-in .top-right{gap:10px}
   .sc-art{height:84px}
   .hero-card .sc-art{height:60px}
 }
+
+/* ---- v12: button click animations + mobile capability ----
+   EVERY button animates on click: press scale + lift on hover, ripple
+   (JS adds .ripple at the tap point — see app.js), and a short page
+   fade/slide when a view opens. All 150–250ms, disabled under
+   prefers-reduced-motion. Mobile: no horizontal overflow, single-column
+   stacks, 44px+ touch targets, 16px inputs, compact topbar. */
+button{transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease,filter .18s ease}
+.btn,.hero-cta,.hero-card,.simple-choices button,.simple-more button,.chip,#nav button,#bottomnav button,.google-btn,.menu-btn,.more-btn,.more-menu button{position:relative;overflow:hidden}
+.btn:hover,.simple-more button:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(15,118,110,.18)}
+.btn:active,.simple-more button:active,.chip:active,#nav button:active,.more-menu button:active{transform:scale(.96)}
+.btn.primary:active,.big-cta:active{transform:scale(.97)}
+.simple-choices button:active,.hero-card:active{transform:scale(.97)}
+#nav button:hover{transform:translateY(-1px)}
+#bottomnav button:active{transform:scale(.92)}
+.google-btn:active{transform:scale(.97)}
+button:focus-visible,a.btn:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+.ripple{position:absolute;border-radius:50%;background:rgba(15,118,110,.22);transform:scale(0);animation:rippleIn .25s ease-out forwards;pointer-events:none;z-index:0}
+.ripple.light{background:rgba(255,255,255,.45)}
+@keyframes rippleIn{to{transform:scale(1);opacity:0}}
+.page.active{animation:pageIn .25s ease both}
+@keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.scene-img{width:100%;border-radius:12px;display:block;margin:6px 0 10px;box-shadow:0 4px 14px rgba(15,118,110,.15)}
+@media(max-width:860px){
+  html,body{overflow-x:hidden}
+  .btn,#nav button,.chip,.more-menu button,.simple-more button{min-height:44px}
+  #nav button{padding:11px 14px}
+  .menu-btn,.more-btn{min-height:44px;min-width:44px}
+  #bottomnav button{min-height:48px;flex:1;min-width:0}
+  .topbar{padding:10px 12px}
+  .brand strong{font-size:15px}
+  .brand small{font-size:11px}
+  .top-right .btn{padding:10px 14px;font-size:13px}
+  #limitPill{display:none}
+  .big-cta{font-size:18px;padding:16px 20px;min-height:56px}
+  .mono{overflow-x:auto}
+  .gate-card{padding:22px 18px}
+  .google-btn{min-height:52px;font-size:15px}
+}
+@media(max-width:560px){
+  .simple-choices{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .grid3{grid-template-columns:1fr}
+  .page-grid{grid-template-columns:1fr}
+  .hero-cards{grid-template-columns:repeat(2,1fr)}
+  main{padding:12px 12px 96px}
+  h1{font-size:24px}
+  .card{padding:14px}
+  .row{row-gap:8px}
+  .row .btn{flex:1 1 44%}
+  #userChip span{max-width:84px}
+  .top-right{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){
+  button,.card,.btn,.page.active{animation:none!important;transition:none!important}
+  .ripple{display:none}
+}

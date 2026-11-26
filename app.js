@@ -12,7 +12,7 @@ function go(p){try{if('speechSynthesis' in window)speechSynthesis.cancel();}catc
   welcome hero goes to Google sign-in instead (auth.js capture handler is
   the first line of defence; this stops programmatic go() calls too). */
   if(p!=='home'&&!document.body.classList.contains('signed-in')){if(window.startGoogleSignIn)window.startGoogleSignIn();return;}
-  document.body.classList.toggle('on-home',p==='home');var mm=document.getElementById('moreMenu');if(mm)mm.classList.remove('open');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('.page').forEach(s=>s.classList.remove('active'));const el=document.getElementById('page-'+p);if(el)el.classList.add('active');const nav=document.getElementById('nav');if(nav)nav.classList.remove('open');if(p==='library')renderLibrary();if(p==='projects')renderProjects();if(p==='dashboard')renderDashboard();if(p==='admin')renderAdmin();if(p==='settings')renderProviders();if(p==='home'){renderHome();renderSimpleHome();}window.scrollTo(0,0);}
+  document.body.classList.toggle('on-home',p==='home');var mm=document.getElementById('moreMenu');if(mm)mm.classList.remove('open');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('.page').forEach(s=>s.classList.remove('active'));const el=document.getElementById('page-'+p);if(el)el.classList.add('active');const nav=document.getElementById('nav');if(nav)nav.classList.remove('open');if(p==='library')renderLibrary();if(p==='projects')renderProjects();if(p==='dashboard')renderDashboard();if(p==='admin')renderAdmin();if(p==='settings')renderProviders();if(p==='home'){renderHome();renderSimpleHome();}window.scrollTo({top:0,behavior:(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth'});}
 function toggleMenu(){const nav=document.getElementById('nav');if(nav)nav.classList.toggle('open');}
 function toggleMoreMenu(){const m=document.getElementById('moreMenu');if(m)m.classList.toggle('open');}
 let deferredInstallPrompt=null;
@@ -24,6 +24,26 @@ async function installApp(){
 }
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
 document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.page)));
+/* v12: button click animations — a ripple at the tap point on every button,
+   plus clearing the hero cards' entrance animation once it has played so
+   hover-lift / :active press work afterwards. 150–250ms, and skipped
+   entirely under prefers-reduced-motion. */
+(function(){
+  const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduced){
+    setTimeout(()=>{document.querySelectorAll('.hero-card').forEach(c=>c.classList.add('entrance-done'));},1000);
+    document.addEventListener('click',function(e){
+      const t=e.target.closest?e.target.closest('button, a.btn, .chip'):null;
+      if(!t||t.disabled)return;
+      const r=t.getBoundingClientRect(); const d=Math.max(r.width,r.height)*2.2;
+      const s=document.createElement('span'); s.className='ripple'+(t.classList.contains('primary')||t.classList.contains('hero-cta')||t.classList.contains('getstarted-btn')?' light':'');
+      s.style.width=s.style.height=d+'px';
+      s.style.left=((e.clientX||r.left+r.width/2)-r.left-d/2)+'px';
+      s.style.top=((e.clientY||r.top+r.height/2)-r.top-d/2)+'px';
+      t.appendChild(s); setTimeout(()=>{s.remove();},300);
+    });
+  }
+})();
 function renderCounts(){const p=document.getElementById('countPill');if(p)p.textContent=state.projects.length+' projects · '+state.characters.length+' characters';}
 function logHistory(kind,detail){state.history.unshift({kind,detail,at:new Date().toISOString()});state.history=state.history.slice(0,100);save();}
 
@@ -193,10 +213,16 @@ function generateStoryboard(){
       camera:CAMERA, negative:NEGATIVE,
       prompt:''};
     scene.prompt='SCENE '+(i+1)+'/'+n+': '+idea+'. '+bibleText()+' Entry: from the '+entry+', start position '+pos+'. End position: '+exit+', exit to the '+exit+'. Next scene starts at '+exit+'. '+CAMERA+' '+NEGATIVE;
+    /* v12: every scene gets its REAL illustration — the same makeSVG()
+       picture-book illustration, built from this scene's narration +
+       the Character Bible + Storybook style — so the storyboard preview
+       and the rendered video show the user's character and setting,
+       not a flat colour. */
+    scene.img=makeSVG({scene:idea+' — scene '+(i+1)+': '+scene.narration,text:scene.narration},'Storybook Illustration');
     storyboard.push(scene); pos=exit;
   }
   const out=document.getElementById('animOut');
-  out.innerHTML=storyboard.map((s,i)=>'<div class="book-page"><strong>Scene '+s.n+'</strong><p>'+esc(s.narration)+'</p><p class="small">Entry: <strong>'+esc(s.entry)+'</strong> · Start: '+esc(s.start)+' → End: '+esc(s.end)+' · Exit: '+esc(s.exit)+'</p><p class="small muted">Continuity: '+(i===0?'starts centre':('starts at '+storyboard[i-1].end+' (previous scene end)'))+'</p><p class="mono small">'+esc(s.prompt)+'</p><div class="row"><button class="btn" onclick="copyPrompt('+i+')">📋 Copy prompt</button></div></div>').join('');
+  out.innerHTML=storyboard.map((s,i)=>'<div class="book-page"><strong>Scene '+s.n+'</strong>'+(s.img?'<img class="scene-img" src="'+s.img+'" alt="Scene '+s.n+' illustration">':'')+'<p>'+esc(s.narration)+'</p><p class="small">Entry: <strong>'+esc(s.entry)+'</strong> · Start: '+esc(s.start)+' → End: '+esc(s.end)+' · Exit: '+esc(s.exit)+'</p><p class="small muted">Continuity: '+(i===0?'starts centre':('starts at '+storyboard[i-1].end+' (previous scene end)'))+'</p><p class="mono small">'+esc(s.prompt)+'</p><div class="row"><button class="btn" onclick="copyPrompt('+i+')">📋 Copy prompt</button></div></div>').join('');
   logHistory('animation','Storyboard: '+n+' scenes — '+idea);save();
 }
 function copyText(t){if(navigator.clipboard)navigator.clipboard.writeText(t);else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}}
@@ -255,34 +281,77 @@ function renderVideo(){
     const v=document.getElementById('animVideo'); v.src=url; v.style.display='block'; v.load();
     if(dl){dl.href=url; dl.download='vitalize-storynest-video-'+dur+'s.webm'; dl.style.display='inline-block';}
     if(status) status.textContent='Done — '+dur+'s · '+ratio+' · '+q+'. Play it above or tap Download video.';
-    document.getElementById('renderNote').textContent='Built-in renderer: canvas + MediaRecorder in this browser. Not an external AI video model.';
+    document.getElementById('renderNote').textContent='Built-in renderer: canvas + MediaRecorder in this browser — each scene shows its own illustration from your storyboard, with slow zoom/pan. Not an external AI video model.';
     try{const a=document.createElement('a');a.href=url;a.download='vitalize-storynest-video-'+dur+'s.webm';document.body.appendChild(a);a.click();a.remove();}catch(e){}
     logHistory('video','Rendered '+dur+'s video '+ratio+' '+q); save();
   };
-  const per=dur/storyboard.length; const start=performance.now();
+  const per=dur/storyboard.length; let start=performance.now();
+  /* v12: the video draws each scene's REAL illustration (generated in
+     generateStoryboard from the scene narration + Character Bible),
+     with a slow Ken Burns zoom/pan so the picture moves — plus the
+     character, the full narration as caption, and the scene number.
+     No more flat colour + generic smiley face. Images are preloaded
+     before recording starts; if one fails to load, that scene falls
+     back to a coloured backdrop so the render never stalls. */
+  const sceneImgs=storyboard.map(s=>{const im=new Image();im.src=s.img||makeSVG({scene:s.narration,text:s.narration},'Storybook Illustration');return im;});
+  function wrapText(text,maxW){
+    const words=String(text).split(/\s+/);const lines=[];let line='';
+    words.forEach(w=>{const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;});
+    if(line)lines.push(line);return lines;
+  }
   function drawFrame(t){
     const idx=Math.min(storyboard.length-1,Math.floor(t/per)); const local=Math.min(1,(t-idx*per)/per); const s=storyboard[idx];
-    const zoom=1+local*0.15; ctx.save();
-    ctx.fillStyle=['#fde68a','#bae6fd','#fbcfe8','#d1fae5'][idx%4]; ctx.fillRect(0,0,W,H);
-    ctx.translate(W/2,H/2); ctx.scale(zoom,zoom); ctx.translate(-W/2,-H/2);
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(W/2,H*0.4,Math.min(W,H)*0.18,0,7); ctx.fill();
-    ctx.fillStyle='#1e1b2e'; ctx.beginPath(); ctx.arc(W/2-30,H*0.38,8,0,7); ctx.arc(W/2+30,H*0.38,8,0,7); ctx.fill();
-    ctx.strokeStyle='#1e1b2e'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(W/2,H*0.42,40,0.2,Math.PI-0.2); ctx.stroke();
+    const img=sceneImgs[idx];
+    ctx.save();
+    ctx.fillStyle='#081a43'; ctx.fillRect(0,0,W,H);
+    if(img&&img.complete&&img.naturalWidth){
+      const zoom=1.06+local*0.14; /* slow zoom-in across the scene */
+      const drift=(idx%2===0?-1:1)*local*0.05*W; /* gentle pan, alternating direction */
+      const scale=Math.max(W/img.naturalWidth,H/img.naturalHeight)*zoom;
+      const dw=img.naturalWidth*scale, dh=img.naturalHeight*scale;
+      ctx.drawImage(img,(W-dw)/2+drift,(H-dh)/2,dw,dh);
+    }else{
+      ctx.fillStyle=['#fde68a','#bae6fd','#fbcfe8','#d1fae5'][idx%4]; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(W/2,H*0.4,Math.min(W,H)*0.18,0,7); ctx.fill();
+      ctx.fillStyle='#1e1b2e'; ctx.beginPath(); ctx.arc(W/2-30,H*0.38,8,0,7); ctx.arc(W/2+30,H*0.38,8,0,7); ctx.fill();
+      ctx.strokeStyle='#1e1b2e'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(W/2,H*0.42,40,0.2,Math.PI-0.2); ctx.stroke();
+    }
     ctx.restore();
-    ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,H-90,W,90); ctx.fillStyle='#fff'; ctx.font='28px sans-serif';
-    ctx.fillText('Scene '+(idx+1)+' — '+s.narration.slice(0,70),20,H-40);
+    /* Scene badge, top-left */
+    const badge='SCENE '+(idx+1)+' / '+storyboard.length;
+    ctx.font='bold '+Math.max(20,Math.round(W*0.022))+'px sans-serif';
+    const bw=ctx.measureText(badge).width+28;
+    ctx.fillStyle='rgba(8,26,67,0.72)';
+    const bh=Math.max(34,Math.round(W*0.032));
+    if(ctx.roundRect){ctx.beginPath(); ctx.roundRect(18,18,bw,bh,16); ctx.fill();}else{ctx.fillRect(18,18,bw,bh);}
+    ctx.fillStyle='#ffd52e'; ctx.fillText(badge,32,18+Math.max(34,Math.round(W*0.032))-Math.max(10,Math.round(W*0.009)));
+    /* Full narration as caption, wrapped — never truncated */
+    const fs=Math.max(20,Math.round(W*0.026));
+    ctx.font=fs+'px sans-serif';
+    const lines=wrapText(s.narration,W-56);
+    const lh=Math.round(fs*1.45); const bandH=lines.length*lh+28;
+    ctx.fillStyle='rgba(0,0,0,0.68)'; ctx.fillRect(0,H-bandH,W,bandH);
+    ctx.fillStyle='#fff';
+    lines.forEach((ln,i)=>{ctx.fillText(ln,28,H-bandH+18+(i+1)*lh-Math.round(fs*0.35));});
     return idx;
   }
-  drawFrame(0);
-  try{ rec.start(250); }catch(e){ rendering=false; if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';} if(err)err.textContent='Recorder could not start: '+(e&&e.message?e.message:e); return; }
-  renderTimer=setInterval(()=>{
-    const t=(performance.now()-start)/1000;
-    if(cancelRender||t>=dur){ clearInterval(renderTimer); try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} return; }
-    const idx=drawFrame(t);
-    const done=Math.floor(t);
-    if(status) status.textContent='Rendering… '+done+'s / '+dur+'s · Scene '+(idx+1)+'/'+storyboard.length+' — keep this tab open';
-    if(bar) bar.style.width=Math.round(t/dur*100)+'%';
-  },100);
+  function startRecording(){
+    start=performance.now(); /* clock starts when recording starts, not while pictures were loading */
+    drawFrame(0);
+    try{ rec.start(250); }catch(e){ rendering=false; if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';} if(err)err.textContent='Recorder could not start: '+(e&&e.message?e.message:e); return; }
+    renderTimer=setInterval(()=>{
+      const t=(performance.now()-start)/1000;
+      if(cancelRender||t>=dur){ clearInterval(renderTimer); try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} return; }
+      const idx=drawFrame(t);
+      const done=Math.floor(t);
+      if(status) status.textContent='Rendering… '+done+'s / '+dur+'s · Scene '+(idx+1)+'/'+storyboard.length+' — keep this tab open';
+      if(bar) bar.style.width=Math.round(t/dur*100)+'%';
+    },100);
+  }
+  /* Wait for the scene pictures to load (max ~1.5s) before recording,
+     so frame 1 already shows the illustration, not a blank backdrop. */
+  const imgsReady=Promise.all(sceneImgs.map(im=>im.complete?Promise.resolve():new Promise(res=>{im.onload=res;im.onerror=res;})));
+  Promise.race([imgsReady,new Promise(res=>setTimeout(res,1500))]).then(startRecording);
 }
 function cancelVideoRender(){ if(!rendering) return; cancelRender=true; if(renderTimer) clearInterval(renderTimer); }
 

@@ -11,10 +11,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="StoryNest">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=11">
+<link rel="stylesheet" href="styles.css?v=12">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="hero.css?v=11">
-<link rel="stylesheet" href="hero-bg.css?v=11">
+<link rel="stylesheet" href="hero.css?v=12">
+<link rel="stylesheet" href="hero-bg.css?v=12">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body class="on-home">
@@ -243,7 +243,7 @@
     <div class="row"><button class="btn" onclick="copyAllPrompts()">📋 Copy all video prompts</button></div>
   </div>
   <div class="card"><h3>Built-in video renderer (no key needed)</h3>
-    <p class="muted small">Renders your storyboard scenes on a canvas with slow zoom / gentle pan, captions and narration text, and records it with MediaRecorder. The file downloads from this browser. This is a Ken-Burns-style render of your generated illustrations — it is not an external AI video model.</p>
+    <p class="muted small">Renders your storyboard scenes on a canvas with slow zoom / gentle pan, captions and narration text, and records it with MediaRecorder. The file downloads from this browser. Each scene shows its own illustration — the picture generated from that scene's narration and your Character Bible — so the video looks like the story you gave it. This is a Ken-Burns-style render of your generated illustrations — it is not an external AI video model.</p>
     <div class="row"><button class="btn primary" id="renderBtn" onclick="renderVideo()">▶ Render video in browser</button><button class="btn" id="renderCancel" style="display:none" onclick="cancelVideoRender()">✕ Cancel</button><span id="renderStatus" class="muted"></span></div>
     <div class="progress-wrap"><div class="progress-bar" id="renderProgress"></div></div>
     <p class="muted small">Tip: click Render once — the preview below plays live while it records. A 15s test is fastest; 1 min takes a full minute. Keep this tab open until it says Done.</p>
@@ -351,7 +351,7 @@
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="auth.js?v=11"></script>
-<script src="app.js?v=11"></script>
+<script src="auth.js?v=12"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>
