@@ -151,6 +151,22 @@ body.on-home main{padding-top:0}
    until Google sign-in. After sign-in the simple home on Home is the way
    in: creation choices first — Story, Picture Book, Animation, Music
    Video, Comic — each opening its own studio. */
+/* ---- v10: signed-out page ends at the hero — root-cause fix ----
+   v9 hid only .hero-cards / #simpleHome / footer / bottomnav, but the app
+   sections themselves were NEVER hidden: there was no .page{display:none}
+   rule anywhere (only inside @media print), so go() toggling .active did
+   nothing visually and every section (pricing, book, story, animation,
+   music, comic, library, projects, dashboard, settings, admin) rendered
+   stacked below the hero while signed out. v10 adds the missing rule, so
+   only the .active page shows, AND belt-and-braces signed-out rules that
+   force every non-home section display:none even if it somehow becomes
+   .active. After Google sign-in all sections work exactly as before,
+   with creation choices (Story, Picture Book, Animation, Music Video,
+   Comic) first on the signed-in home. */
+.page{display:none}
+.page.active{display:block}
+body:not(.signed-in) main .page:not(#page-home){display:none!important}
+body:not(.signed-in) #simpleHome{display:none!important}
 #simpleHome{display:none;max-width:1080px;margin:0 auto;padding:30px 22px 10px}
 body.signed-in #simpleHome{display:block}
 body:not(.signed-in) .hero-cards{display:none!important}

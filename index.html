@@ -11,10 +11,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="StoryNest">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="hero.css?v=9">
-<link rel="stylesheet" href="hero-bg.css?v=9">
+<link rel="stylesheet" href="hero.css?v=10">
+<link rel="stylesheet" href="hero-bg.css?v=10">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body class="on-home">
@@ -344,14 +344,14 @@
 </nav>
 <footer><p>Vitalize StoryNest — original content only. Built-in engine, unlimited private use. <a href="https://github.com/vv-team-codes/vitalize-storynest">GitHub: vv-team-codes/vitalize-storynest</a></p></footer>
 <script>
-/* v9: ask the service worker for an update on every load. If a new worker
+/* v10: ask the service worker for an update on every load. If a new worker
    takes control, reload once per session so a stale cached gate can never
    stick on first load. (First-ever visit: no old worker, no reload.) */
 (function(){if(!('serviceWorker' in navigator))return;try{navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update();});navigator.serviceWorker.addEventListener('controllerchange',function(){if(sessionStorage.getItem('vsn-sw-reload'))return;try{sessionStorage.setItem('vsn-sw-reload','1');}catch(e){}location.reload();});}catch(e){}})();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="auth.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="auth.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
