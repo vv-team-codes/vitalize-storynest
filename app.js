@@ -662,19 +662,32 @@ function drawSceneFrame(ctx,img,s,idx,t,per,W,H,prevImg){
   ctx.fillStyle='rgba(8,26,67,0.72)';
   if(ctx.roundRect){ctx.beginPath(); ctx.roundRect(18,18,bw,bh,16); ctx.fill();}else{ctx.fillRect(18,18,bw,bh);}
   ctx.fillStyle='#ffd52e'; ctx.fillText(badge,32,18+bh-Math.max(10,Math.round(W*0.009)));
-  /* Full narration as caption, wrapped — never truncated */
+  /* Full narration as caption, wrapped — never truncated.
+     v28: the scene's spoken line goes first, in gold italic, so
+     the dialogue is readable on screen — the free video has no
+     voice track (the browser cannot record its own speech
+     synthesis), and the character's mouth moves on these beats. */
   const fs=Math.max(20,Math.round(W*0.026));
+  const lh=Math.round(fs*1.45);
+  var capLines=[];
+  if(s&&s.dialogue){
+    ctx.font='italic bold '+fs+'px sans-serif';
+    wrapCaptionText(ctx,'\u201C'+s.dialogue+'\u201D',W-56).forEach(function(ln){capLines.push({t:ln,d:true});});
+  }
   ctx.font=fs+'px sans-serif';
-  const lines=wrapCaptionText(ctx,s.narration,W-56);
-  const lh=Math.round(fs*1.45); const bandH=lines.length*lh+28;
+  wrapCaptionText(ctx,s.narration,W-56).forEach(function(ln){capLines.push({t:ln,d:false});});
+  const bandH=capLines.length*lh+28;
   ctx.fillStyle='rgba(0,0,0,0.68)'; ctx.fillRect(0,H-bandH,W,bandH);
-  ctx.fillStyle='#fff';
-  lines.forEach(function(ln,i){ctx.fillText(ln,28,H-bandH+18+(i+1)*lh-Math.round(fs*0.35));});
+  capLines.forEach(function(ln,i){
+    ctx.font=ln.d?('italic bold '+fs+'px sans-serif'):(fs+'px sans-serif');
+    ctx.fillStyle=ln.d?'#ffd52e':'#fff';
+    ctx.fillText(ln.t,28,H-bandH+18+(i+1)*lh-Math.round(fs*0.35));
+  });
   return idx;
 }
 /* Reset the renderer to idle: button back, cancel hidden, bar at 0. */
 function resetRenderUI(msg){
-  rendering=false; cancelRender=false; activeRec=null;
+  rendering=false; cancelRender=false; activeRec=null; stopMusicBed(); /* v28: music stops on cancel/error too */
   if(renderTimer){clearInterval(renderTimer);renderTimer=null;}
   const btn=document.getElementById('renderBtn'), cancelBtn=document.getElementById('renderCancel'),
     bar=document.getElementById('renderProgress'), status=document.getElementById('renderStatus');
@@ -756,9 +769,81 @@ function startPreviewFallback(reason){
   });
   logHistory('video','Moving preview started ('+reason.slice(0,80)+')'); save();
 }
+/* ---------- Music bed for recorded video (v28) ----------
+   The built-in renderer recorded VIDEO ONLY — the finished file
+   had no audio track at all. A gentle music bed is now mixed in,
+   free, with no download and no key: Web Audio oscillators play a
+   soft melody + pad chords into a MediaStreamDestination, whose
+   audio track is combined with the canvas video track for the SAME
+   MediaRecorder. The context is created inside the user's tap
+   (Make my video / Render run on a click), so it is running before
+   any async work. If audio setup fails for any reason the render
+   still works, video-only, exactly as before — audio never breaks
+   a video.
+   Spoken dialogue is NOT in the file, honestly: the browser's
+   speechSynthesis cannot be captured into a MediaStream — it plays
+   straight to the speakers and exposes no audio stream — so no code
+   can record it. Dialogue is shown as captions and the character's
+   mouth moves on the dialogue beats. A real voice track needs a
+   paid video/TTS service; the one free in-browser voice (Kokoro,
+   ~90MB model download, slow on CPU) is not bundled here. */
+var musicCtx=null, musicDest=null, musicNodes=[];
+function ensureMusicCtx(){
+  try{
+    if(typeof AudioContext==='undefined'&&typeof window.webkitAudioContext==='undefined') return null;
+    if(!musicCtx){ var AC=window.AudioContext||window.webkitAudioContext; musicCtx=new AC(); }
+    if(musicCtx.state==='suspended'){ musicCtx.resume().catch(function(){}); }
+    if(!musicDest) musicDest=musicCtx.createMediaStreamDestination();
+    return musicCtx;
+  }catch(e){ return null; }
+}
+function clearMusicNodes(){
+  musicNodes.forEach(function(n){ try{ if(n.stop) n.stop(); }catch(e){} try{ if(n.disconnect) n.disconnect(); }catch(e){} });
+  musicNodes=[];
+}
+function stopMusicBed(){
+  clearMusicNodes();
+  if(musicCtx&&musicCtx.state==='running'){ musicCtx.suspend().catch(function(){}); }
+}
+function startMusicBed(dur){
+  var ctx=ensureMusicCtx();
+  if(!ctx||!musicDest) return false;
+  clearMusicNodes();
+  if(ctx.state==='suspended'){ ctx.resume().catch(function(){}); }
+  var t0=ctx.currentTime+0.08;
+  var master=ctx.createGain(); master.gain.value=0.22;
+  master.connect(musicDest); master.connect(ctx.destination);
+  musicNodes.push(master);
+  function note(freq,start,len,type,vol){
+    var o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type||'triangle'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,start);
+    g.gain.linearRampToValueAtTime(vol,start+0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001,start+len);
+    o.connect(g); g.connect(master);
+    o.start(start); o.stop(start+len+0.05);
+    musicNodes.push(o);
+  }
+  /* Gentle pad chords: C – Am – F – G, one chord every 4 seconds. */
+  var chords=[[261.63,329.63,392.00],[220.00,261.63,329.63],[174.61,220.00,261.63],[196.00,246.94,293.66]];
+  for(var c=0;c<Math.ceil(dur/4);c++){
+    var ch=chords[c%chords.length], cs=t0+c*4;
+    ch.forEach(function(f){ note(f,cs,4.4,'sine',0.08); });
+  }
+  /* Cheerful pentatonic melody, 0.5s steps, 8s loop. */
+  var mel=[659.25,783.99,880.00,783.99,659.25,523.25,587.33,659.25,783.99,880.00,783.99,659.25,587.33,659.25,523.25,0];
+  var step=0.5, nSteps=Math.ceil(dur/step);
+  for(var i=0;i<nSteps;i++){
+    var f=mel[i%mel.length]; if(!f) continue;
+    note(f,t0+i*step,0.55,'triangle',0.30);
+    if(i%8===0) note(f*2,t0+i*step,0.4,'sine',0.06);
+  }
+  return true;
+}
 function renderVideo(){
   stopPreview();
   previewFallback=false;
+  ensureMusicCtx(); /* v28: audio context must start inside this tap — the render starts after async picture work, when the gesture is long gone */
   /* v13: recover a stuck renderer instead of silently doing nothing.
      After a Cancel the old code left `rendering` true forever; if the
      recorder is gone/inactive there is no render in progress, so
@@ -809,7 +894,19 @@ function renderVideo(){
   let rec;
   try{
     const stream=canvas.captureStream(30);
-    rec=new MediaRecorder(stream, {mimeType:mime,videoBitsPerSecond:5000000});
+    /* v28: mix the free music bed in as a real audio track. The
+       destination stream exists as soon as the context does, so the
+       track is combined here; the notes themselves are scheduled
+       in startRecording(), when recording actually starts. If the
+       music cannot start, the render still works, video-only. */
+    var recStream=stream;
+    try{
+      if(musicCtx&&musicDest){
+        var aTracks=musicDest.stream.getAudioTracks();
+        if(aTracks.length) recStream=new MediaStream(stream.getVideoTracks().concat(aTracks));
+      }
+    }catch(e2){}
+    rec=new MediaRecorder(recStream, {mimeType:mime,videoBitsPerSecond:5000000});
   }catch(e){
     startPreviewFallback('Video recorder could not start in this browser ('+(e&&e.message?e.message:e)+').');
     return;
@@ -830,7 +927,7 @@ function renderVideo(){
   };
   rec.onstop=()=>{
     const wasPreview=previewFallback;
-    rendering=false; activeRec=null;
+    rendering=false; activeRec=null; stopMusicBed(); /* v28: music stops with the recording */
     if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';}
     if(cancelBtn) cancelBtn.style.display='none';
     if(wasPreview) return; /* a preview fallback already took over the status text */
@@ -860,7 +957,8 @@ function renderVideo(){
     if(cancelRender){ resetRenderUI('Render cancelled — tap Render again to try again.'); return; }
     start=performance.now(); /* clock starts when recording starts, not while pictures were loading */
     drawSceneFrame(ctx,sceneImgs[0],storyboard[0],0,0,per,W,H);
-    try{ rec.start(250); }catch(e){ rendering=false; activeRec=null; if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';} if(err)err.textContent='Recorder could not start: '+(e&&e.message?e.message:e); return; }
+    startMusicBed(dur); /* v28: music and video start together */
+    try{ rec.start(250); }catch(e){ rendering=false; activeRec=null; stopMusicBed(); if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';} if(err)err.textContent='Recorder could not start: '+(e&&e.message?e.message:e); return; }
     renderTimer=setInterval(()=>{
       const t=(performance.now()-start)/1000;
       if(cancelRender||t>=dur){ clearInterval(renderTimer); renderTimer=null; try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} return; }
@@ -1534,12 +1632,18 @@ async function buildQuickVideo(){
   var title=(document.getElementById('qvTitle').value||'').trim();
   var topic=(document.getElementById('qvTopic').value||'').trim()||'A brave little hero finds a magical surprise';
   var wishes=(document.getElementById('qvWishes').value||'').trim();
-  var n=Math.max(3,Math.min(6,parseInt(document.getElementById('qvScenes').value)||4));
+  /* v28: 1-Minute Film — 6 scenes × 10s = exactly 60s. On by
+     default: the scenes box and the duration are forced to match,
+     so a film is always six 10-second clips, never six scenes
+     squeezed into 15s. Uncheck it for a custom scene count. */
+  var oneMin=!document.getElementById('qvOneMin')||document.getElementById('qvOneMin').checked;
+  var n=oneMin?6:Math.max(3,Math.min(6,parseInt(document.getElementById('qvScenes').value)||4));
+  if(oneMin){ var qs0=document.getElementById('qvScenes'); if(qs0) qs0.value='6'; var ad0=document.getElementById('anDur'); if(ad0) ad0.value='60'; }
   qvTitle=title||topic;
   qvAnim=(document.getElementById('qvAnimSel').value)||'talk';
   qvCharOn=true;
   if(qvCharId!=='upload'&&!QV_CHARS[qvCharId]) qvCharId='boy';
-  qvBusy=true; qvCancel=false;
+  qvBusy=true; qvCancel=false; ensureMusicCtx(); /* v28: audio context must start inside this tap — the render starts after async picture work, when the gesture is long gone */
   var btn=document.getElementById('qvBtn'), st=document.getElementById('qvStatus'),
       bar=document.getElementById('qvProgress'), cb=document.getElementById('qvCancel');
   if(btn){btn.disabled=true;btn.textContent='⏳ Making your video…';}
@@ -1569,7 +1673,7 @@ async function buildQuickVideo(){
     });
     if(qvCancel) throw new Error('cancelled');
     saveQuickVideoProject(title,topic,wishes);
-    if(st) st.textContent='Pictures ready — rendering your video below… (1 minute takes a full minute — keep this tab open)';
+    if(st) st.textContent=oneMin?'Pictures ready — rendering your 1-minute film (6 scenes × 10s) below… (takes a full minute — keep this tab open)':'Pictures ready — rendering your video below… (1 minute takes a full minute — keep this tab open)';
     if(bar) bar.style.width='55%';
     /* Direct to video — no approval step. */
     qvRenderDone=function(ok){ qvFinish(ok); };
