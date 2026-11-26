@@ -125,12 +125,21 @@
   }, true);
 
   function init() {
-    setLocked(false); /* landing visible immediately */
+    /* v21: do NOT mark signed-in here — Firebase auth state is async, and
+       marking signed-in optimistically flashed the post-login page for ~1s
+       on open, then flipped back to the welcome page when auth said
+       "signed out". The page starts signed-out (the default) behind the
+       .auth-pending splash (see index.html + styles.css) until the first
+       onAuthStateChanged resolves it. Fallback: show the page after 3s
+       even if Firebase never answers, so a network stall cannot leave a
+       blank screen. */
     renderUser(null);
+    setTimeout(function () { document.body.classList.remove('auth-pending'); }, 3000);
     var b = btnEl();
     if (typeof firebase === 'undefined' || !firebase.auth) {
       showError('Google sign-in could not load (Firebase did not load). Check your connection and reload the page.');
       if (b) b.disabled = true;
+      document.body.classList.remove('auth-pending');
       return;
     }
     try {
@@ -139,6 +148,7 @@
       if (auth.setPersistence) auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function () {});
       auth.onAuthStateChanged(function (user) {
         currentUser = user || null;
+        document.body.classList.remove('auth-pending');
         if (user) {
           clearError(); hideGate(); setLocked(false); renderUser(user); if(window.renderSimpleHome) window.renderSimpleHome();
           if (pendingPage) { var p = pendingPage; pendingPage = null; setTimeout(function () { if (window.go) window.go(p); }, 50); }
@@ -150,6 +160,7 @@
       showGate();
       showError('Google sign-in is not configured correctly: ' + (e && e.message ? e.message : 'Firebase setup error.'));
       if (b) b.disabled = true;
+      document.body.classList.remove('auth-pending');
     }
   }
 
