@@ -204,14 +204,12 @@ function makeSVG(page,style){
    reloads (blob: URLs would not). */
 let illustrating=false, upgradingStoryboard=false, upgradingComic=false;
 let nextImageAt=0;
-/* The site's own image endpoint. Relative path works when this site
-   itself is deployed on the same host as the service. If this site
-   stays on GitHub Pages, set this to the service's absolute URL
-   after deploying it — e.g. 'https://<your-project>.vercel.app/api/generate-image'
-   — see PROXY-SETUP.md. Until the service is deployed, picture
-   generation falls back to the built-in illustrations (the site
-   still works, pictures still appear). */
-const IMAGE_PROXY_URL='/api/generate-image';
+/* The site's own image endpoint. The image service runs on Vercel
+   (it holds its credentials as server-side environment variables),
+   so this site calls it by its absolute URL — that works from
+   GitHub Pages (ekiddy.com) AND from the Vercel site itself, and
+   the browser still never sees any provider name, model or key. */ 
+const IMAGE_PROXY_URL='https://vitalize-storynest.vercel.app/api/generate-image';
 async function waitImageSlot(){
   const now=Date.now();
   if(nextImageAt>now) await new Promise(function(res){setTimeout(res,nextImageAt-now);});
