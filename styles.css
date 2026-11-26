@@ -288,3 +288,83 @@ button:focus-visible,a.btn:focus-visible{outline:3px solid #f59e0b;outline-offse
   button,.card,.btn,.page.active{animation:none!important;transition:none!important}
   .ripple{display:none}
 }
+
+/* ---- v13: centred shell + Animation Studio one-screen layout + Back buttons ----
+   Centring: every page sits in ONE centred band (1200px) with balanced
+   side margins on laptop; the topbar keeps its full-width gradient but
+   its content aligns to the same band. Mobile stays full-width tidy.
+   Animation Studio (laptop): idea card on top, then a two-column grid —
+   scenes LEFT as four small thumb blocks (thumbnail + scene number +
+   short caption; tap to expand details) and render/video RIGHT at the
+   top — sized to fit one laptop screen without scrolling. The live
+   preview canvas / finished video is capped so it cannot push the
+   page taller than the screen. */
+main{max-width:1200px;width:100%;margin-left:auto;margin-right:auto;padding:22px clamp(16px,4vw,32px)}
+footer{max-width:1200px;margin-left:auto;margin-right:auto}
+#simpleHome{max-width:1200px}
+.back-btn{margin:2px 0 10px}
+.anim-format{font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.anim-format select{width:auto;min-width:180px}
+.scene-thumb{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff;cursor:pointer}
+.scene-thumb-img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}
+.scene-thumb-body{padding:8px 10px}
+.scene-thumb-body strong{font-size:14px}
+.scene-thumb-body p{margin:2px 0 0;font-size:12.5px;color:var(--muted);line-height:1.45}
+.scene-detail{border-top:1px solid var(--border);padding:10px;background:#fff}
+.scene-detail .mono{font-size:11.5px}
+body.dark .scene-thumb{background:#1b2f2c;border-color:#33504b}
+body.dark .scene-detail{background:#1b2f2c}
+#animVideo{width:100%;max-width:480px}
+.anim-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.anim-head h1{margin:0}
+.anim-head .back-btn{margin:0}
+details.anim-providers-card summary{cursor:pointer;font-weight:600;font-size:15px}
+@media(min-width:861px){
+  .topbar{padding-left:max(20px,calc((100vw - 1200px)/2));padding-right:max(20px,calc((100vw - 1200px)/2))}
+  main{padding-top:12px;padding-bottom:10px}
+  footer{padding:8px 20px}
+  /* One-screen Animation Studio (laptop): header, idea card and the
+     two-column layout must fit in 768px height with no scrolling, so
+     everything below is compact on desktop only. Mobile keeps the
+     roomier stacked layout and scrolls normally. */
+  #page-animation h1{font-size:24px}
+  #page-animation .anim-intro{display:none}
+  #page-animation #bibleNote{display:none}
+  /* Idea card as ONE horizontal strip: idea + Random | settings + Generate. */
+  #page-animation .anim-idea-card{margin:8px 0 10px;padding:8px 14px}
+  #page-animation .anim-idea-card h3{display:none}
+  #page-animation .anim-idea-grid{display:flex;gap:10px;align-items:center;flex-wrap:nowrap}
+  #page-animation .anim-idea-grid>div{display:flex;gap:8px;align-items:center;flex:1 1 auto;min-width:0}
+  #page-animation .anim-idea-grid>div:last-child{flex:0 0 auto}
+  #page-animation #anIdea{flex:1;min-width:80px}
+  #page-animation .anim-settings select{max-width:100px}
+  #page-animation .anim-settings label{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  #page-animation .anim-idea-grid .row{margin:0;flex-wrap:nowrap}
+  #page-animation .anim-idea-grid .muted.small{display:none}
+  #page-animation .anim-settings{flex-wrap:nowrap;gap:6px}
+  #page-animation .anim-layout{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);gap:12px;align-items:start}
+  #page-animation .anim-layout .card{margin:0}
+  #page-animation .anim-scenes-card,#page-animation .anim-render-card{padding:10px 14px}
+  #page-animation .anim-scenes-card h3,#page-animation .anim-render-card h3{margin:0 0 4px;font-size:15px}
+  #page-animation .anim-scenes-card>p.muted.small{display:none}
+  #page-animation .anim-render-card>p.muted.small{margin:2px 0 6px;line-height:1.4}
+  #page-animation #animOut{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #page-animation .scene-thumb-img{height:84px;aspect-ratio:auto}
+  #page-animation .scene-thumb-body{padding:4px 8px}
+  #page-animation .scene-thumb-body p{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  #page-animation .anim-tip{display:none}
+  #page-animation #renderPreview canvas{max-width:100%;max-height:170px;width:auto;height:auto}
+  #page-animation #animVideo{max-height:140px;width:auto;max-width:100%}
+  #page-animation .anim-video-row{display:flex;gap:12px;align-items:flex-start}
+  #page-animation .anim-video-side{flex:1;min-width:0}
+  #page-animation .anim-video-side .row{margin:0 0 6px}
+  footer p{margin:0}
+  #page-animation .anim-providers-card{padding:8px 14px}
+  #page-animation .anim-providers-card summary{font-size:14px}
+  #page-animation .row{margin:6px 0}
+}
+@media(max-width:860px){
+  #page-animation #animOut{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #page-animation #renderPreview canvas{max-width:100%}
+  .back-btn{margin-bottom:8px}
+}

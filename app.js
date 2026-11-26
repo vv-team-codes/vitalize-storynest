@@ -8,11 +8,18 @@ function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.project
 function save(){localStorage.setItem(LS,JSON.stringify(state));renderCounts();}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function uid(){return 'id'+Date.now().toString(36)+Math.floor(Math.random()*999);}
-function go(p){try{if('speechSynthesis' in window)speechSynthesis.cancel();}catch(e){}document.body.classList.remove('reading-aloud');/* v10: defence in depth — while signed out, any navigation past the
+function go(p,push){try{if('speechSynthesis' in window)speechSynthesis.cancel();}catch(e){}document.body.classList.remove('reading-aloud');/* v10: defence in depth — while signed out, any navigation past the
   welcome hero goes to Google sign-in instead (auth.js capture handler is
   the first line of defence; this stops programmatic go() calls too). */
   if(p!=='home'&&!document.body.classList.contains('signed-in')){if(window.startGoogleSignIn)window.startGoogleSignIn();return;}
-  document.body.classList.toggle('on-home',p==='home');var mm=document.getElementById('moreMenu');if(mm)mm.classList.remove('open');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('.page').forEach(s=>s.classList.remove('active'));const el=document.getElementById('page-'+p);if(el)el.classList.add('active');const nav=document.getElementById('nav');if(nav)nav.classList.remove('open');if(p==='library')renderLibrary();if(p==='projects')renderProjects();if(p==='dashboard')renderDashboard();if(p==='admin')renderAdmin();if(p==='settings')renderProviders();if(p==='home'){renderHome();renderSimpleHome();}window.scrollTo({top:0,behavior:(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth'});}
+  document.body.classList.toggle('on-home',p==='home');var mm=document.getElementById('moreMenu');if(mm)mm.classList.remove('open');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('.page').forEach(s=>s.classList.remove('active'));const el=document.getElementById('page-'+p);if(el)el.classList.add('active');const nav=document.getElementById('nav');if(nav)nav.classList.remove('open');if(p==='library')renderLibrary();if(p==='projects')renderProjects();if(p==='dashboard')renderDashboard();if(p==='admin')renderAdmin();if(p==='settings')renderProviders();if(p==='home'){renderHome();renderSimpleHome();}window.scrollTo({top:0,behavior:(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth'});if(push!==false){try{history.pushState({page:p},'');}catch(e){}}}
+/* v13: the browser Back button works too — every go() pushes a history
+   entry, and Back pops to the previous section. The on-screen ← Back
+   button is go('home'). Going back never loses work: go() only switches
+   which section is visible; the generated storyboard / book / story
+   stays in memory and is still there on re-entry. */
+window.addEventListener('popstate',function(e){const p=(e.state&&e.state.page)||'home';go(p,false);});
+try{history.replaceState({page:'home'},'');}catch(e){}
 function toggleMenu(){const nav=document.getElementById('nav');if(nav)nav.classList.toggle('open');}
 function toggleMoreMenu(){const m=document.getElementById('moreMenu');if(m)m.classList.toggle('open');}
 let deferredInstallPrompt=null;
@@ -81,15 +88,25 @@ function generateBook(){
   if(manuscript){pages[0].text=manuscript.slice(0,280);}
   current={id:uid(),kind:'book',title,desc,moral:MORALS[type],age,type,lang,pages,style,hero,characters:[bibleText()],created:new Date().toISOString(),shared:false};
   logHistory('story','Generated "'+title+'" ('+n+' pages, '+type+', '+lang+')');
-  save(); renderBookOut(); renderEditor(); applyBible(); document.querySelectorAll('.step').forEach(s=>s.classList.toggle('on',+s.dataset.s<=3));
+  save();
+  /* v13: pictures appear WITH the book, instantly — every page gets
+     its built-in illustration right here, so the book never looks
+     picture-less. illustrateAll() below then UPGRADes each page to
+     the site's own image service in the
+     background, one at a time with progress. Step 5 buttons still
+     work for re-doing them. */
+  current.pages.forEach(function(p){p.img=makeSVG(p,current.style);p.prompt=p.scene+' — '+bibleText()+' — style: '+current.style;});
+  save(); renderBookOut(); renderEditor(); applyBible();
+  illustrateAll();
+  document.querySelectorAll('.step').forEach(s=>s.classList.toggle('on',+s.dataset.s<=3));
 }
 function renderBookOut(){
   const out=document.getElementById('bookOut'); if(!current){out.innerHTML='<p class="muted">No book generated yet.</p>';return;}
   const font=document.getElementById('edFont')?document.getElementById('edFont').value:'Georgia, serif';
   out.innerHTML='<h3>'+esc(current.title)+'</h3><p>'+esc(current.desc)+'</p><p><strong>Moral:</strong> '+esc(current.moral)+'</p><p><strong>Characters:</strong> '+esc(current.characters.join(' | '))+'</p>'+
-  current.pages.map((p,i)=>'<div class="book-page" style="font-family:'+esc(font)+';background:'+esc(document.getElementById('edBg')?document.getElementById('edBg').value:'#fff8ec')+'"><strong>Page '+p.n+'</strong><p>'+esc(p.text)+'</p><p class="muted small">Scene: '+esc(p.scene)+'</p><div class="row"><button class="btn" onclick="regenPage('+i+')">↻ Regenerate this page</button><button class="btn" onclick="editPageText('+i+')">✏ Edit text</button></div></div>').join('');
+  current.pages.map((p,i)=>'<div class="book-page" style="font-family:'+esc(font)+';background:'+esc(document.getElementById('edBg')?document.getElementById('edBg').value:'#fff8ec')+'"><strong>Page '+p.n+'</strong>'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p>'+esc(p.text)+'</p><p class="muted small">Scene: '+esc(p.scene)+'</p><div class="row"><button class="btn" onclick="regenPage('+i+')">↻ Regenerate this page</button><button class="btn" onclick="editPageText('+i+')">✏ Edit text</button></div></div>').join('');
 }
-function regenPage(i){if(!current)return;const beats=TYPES[current.type]||TYPES.Adventure;const b=beats[(i+2)%beats.length];current.pages[i].text=current.pages[i].n===current.pages.length?current.pages[i].text:current.hero+' discovered '+b+' and smiled — a small brave step, and then another.';current.pages[i].scene=current.hero+', '+b+', soft light';current.pages[i].img='';save();renderBookOut();renderEditor();}
+function regenPage(i){if(!current)return;const beats=TYPES[current.type]||TYPES.Adventure;const b=beats[(i+2)%beats.length];current.pages[i].text=current.pages[i].n===current.pages.length?current.pages[i].text:current.hero+' discovered '+b+' and smiled — a small brave step, and then another.';current.pages[i].scene=current.hero+', '+b+', soft light';current.pages[i].img=makeSVG(current.pages[i],current.style);current.pages[i].prompt=current.pages[i].scene+' — '+bibleText()+' — style: '+current.style;save();renderBookOut();renderEditor();}
 function editPageText(i){const t=prompt('Edit page text:',current.pages[i].text);if(t!=null){current.pages[i].text=t;save();renderBookOut();renderEditor();}}
 function renderEditor(){const out=document.getElementById('editorOut');if(!current){out.innerHTML='';return;}out.innerHTML=current.pages.map((p,i)=>'<div class="book-page"><strong>Page '+p.n+'</strong>'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'<p class="muted small">No illustration yet — use Step 5.</p>')+'<textarea rows="2" onchange="current.pages['+i+'].text=this.value;save()">'+esc(p.text)+'</textarea><div class="row"><button class="btn" onclick="illustratePage('+i+')">🎨 Illustrate</button><button class="btn" onclick="deletePage('+i+')">Delete page</button></div></div>').join('');}
 function addPage(){if(!current)return alert('Generate a book first.');current.pages.push({n:current.pages.length+1,text:current.hero+' continued the journey, and something wonderful happened.',scene:current.hero+' on a sunny path',prompt:'',img:''});save();renderBookOut();renderEditor();}
@@ -156,10 +173,163 @@ function makeSVG(page,style){
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="'+c2+'" opacity="0.35"/><circle cx="'+sunX+'" cy="90" r="55" fill="'+c1+'"/>'+(moon?'<circle cx="650" cy="80" r="38" fill="#fef9c3"/>':'')+'<ellipse cx="400" cy="520" rx="420" ry="90" fill="#86efac"/><ellipse cx="180" cy="480" rx="180" ry="60" fill="#4ade80"/><ellipse cx="620" cy="490" rx="200" ry="60" fill="#22c55e"/><circle cx="400" cy="360" r="90" fill="#fff" stroke="'+c3+'" stroke-width="6"/><circle cx="370" cy="350" r="12" fill="#1e1b2e"/><circle cx="430" cy="350" r="12" fill="#1e1b2e"/><path d="M370 390 Q400 415 430 390" stroke="#1e1b2e" stroke-width="5" fill="none"/><path d="M330 290 Q400 230 470 290" fill="'+c1+'"/><rect x="360" y="450" width="80" height="70" rx="14" fill="'+c3+'"/><text x="400" y="580" text-anchor="middle" font-family="Georgia,serif" font-size="22" fill="#334155">'+esc(page.scene.slice(0,60))+'</text></svg>';
   return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
-function illustratePage(i){if(!current)return;current.pages[i].img=makeSVG(current.pages[i],current.style);current.pages[i].prompt=current.pages[i].scene+' — '+bibleText()+' — style: '+current.style;save();renderEditor();renderIllus();}
-function illustrateAll(force){if(!current)return alert('Generate a book first.');current.pages.forEach((p,i)=>{if(force||!p.img){p.img=makeSVG(p,current.style);p.prompt=p.scene+' — '+bibleText()+' — style: '+current.style;}});logHistory('image','Illustrated '+current.pages.length+' pages ('+current.style+')');save();renderIllus();renderEditor();}
+/* ---- v13: PICTURE GENERATION — through the site's own image service ----
+   Every picture on this site (book pages, storyboard scenes, comic
+   panels) is generated through ONE path: a POST from this browser to
+   the site's own image endpoint (IMAGE_PROXY_URL below), which
+   returns a finished picture. The browser NEVER talks to any image
+   provider directly, and NO provider name, model name, API key or
+   account appears anywhere in this file, in the UI, or in any network
+   call the browser can see — the pictures simply come back from the
+   site's own endpoint. Server side lives in api/generate-image.js;
+   see PROXY-SETUP.md for deployment (the service holds its own
+   credentials as server-side environment variables — nothing secret
+   is ever in this repo's client code).
+   Behaviour, everywhere pictures generate:
+   - Pictures appear instantly as built-in illustrations, then each
+     one is UPGRADED to a generated picture in the background, one at
+     a time with visible progress ("Generating picture 2 of 6…").
+     Requests are paced through one shared slot so parallel flows
+     (book + storyboard + comic) never burst.
+   - If the image service cannot be reached, is busy, or says the
+     daily limit is hit, that page/scene/panel KEEPS its built-in
+     illustration — never a picture-less page, and the note never
+     names a provider ("Picture couldn't be generated right now —
+     used the built-in picture.").
+   - Each picture is generated separately, so the same character may
+     look a little different on different pages — the UI note says
+     so; the built-in illustration keeps the Character Bible
+     identical on every page.
+   Generated pictures are stored as data URLs so they survive
+   reloads (blob: URLs would not). */
+let illustrating=false, upgradingStoryboard=false, upgradingComic=false;
+let nextImageAt=0;
+/* The site's own image endpoint. Relative path works when this site
+   itself is deployed on the same host as the service. If this site
+   stays on GitHub Pages, set this to the service's absolute URL
+   after deploying it — e.g. 'https://<your-project>.vercel.app/api/generate-image'
+   — see PROXY-SETUP.md. Until the service is deployed, picture
+   generation falls back to the built-in illustrations (the site
+   still works, pictures still appear). */
+const IMAGE_PROXY_URL='/api/generate-image';
+async function waitImageSlot(){
+  const now=Date.now();
+  if(nextImageAt>now) await new Promise(function(res){setTimeout(res,nextImageAt-now);});
+  nextImageAt=Date.now()+4000;
+}
+function fetchWithTimeout(url,ms,opts){const c=new AbortController();const t=setTimeout(function(){c.abort();},ms);const o=Object.assign({},opts||{},{signal:c.signal});return fetch(url,o).finally(function(){clearTimeout(t);});}
+function isSVGImg(u){return typeof u==='string'&&u.indexOf('data:image/svg+xml')===0;}
+async function fetchGeneratedImage(prompt,seed){
+  await waitImageSlot();
+  const r=await fetchWithTimeout(IMAGE_PROXY_URL,90000,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,seed:seed,width:768,height:768})});
+  if(!r.ok){const e=new Error('Image service HTTP '+r.status);e.status=r.status;throw e;}
+  const j=await r.json();
+  if(!j||typeof j.image!=='string'||j.image.indexOf('data:image/')!==0) throw new Error('Image service: no image in response');
+  return j.image;
+}
+function realisticPrompt(p,style){return p.scene+' — '+bibleText()+' — style: '+(style||'Storybook Illustration')+', children\'s picture book illustration, soft light, gentle colours';}
+function svgFallback(p,style){p.img=makeSVG(p,style);p.prompt=p.scene+' — '+bibleText()+' — style: '+style;}
+async function illustratePage(i){
+  if(!current)return;
+  const p=current.pages[i], statusEl=document.getElementById('illusStatus');
+  if(illustrating){alert('Already generating a picture — please wait a moment.');return;}
+  illustrating=true;
+  if(statusEl) statusEl.textContent='Generating picture for page '+p.n+'… please wait.';
+  try{
+    p.img=await fetchGeneratedImage(realisticPrompt(p,current.style),Date.now()%1000000);
+    p.prompt=realisticPrompt(p,current.style)+' (generated picture)';
+    if(statusEl) statusEl.textContent='Done — picture for page '+p.n+'.';
+  }catch(e){
+    svgFallback(p,current.style);
+    if(statusEl) statusEl.textContent='Picture couldn\'t be generated right now — used the built-in picture for page '+p.n+'. Try Illustrate again in a little while.';
+  }
+  illustrating=false; save();renderEditor();renderIllus();
+}
+async function illustrateAll(force){
+  if(!current)return alert('Generate a book first.');
+  if(illustrating)return;
+  const book=current, statusEl=document.getElementById('illusStatus');
+  const todo=[];
+  book.pages.forEach(function(p,i){
+    if(force) todo.push(i);
+    else if(!p.img||isSVGImg(p.img)) todo.push(i);
+  });
+  if(!todo.length){ if(statusEl) statusEl.textContent='All pages already have generated pictures. Tap “Regenerate all” for new ones.'; return; }
+  illustrating=true;
+  let done=0;
+  for(const i of todo){
+    const p=book.pages[i];
+    if(statusEl) statusEl.textContent='Generating picture '+(done+1)+' of '+todo.length+'… please wait.';
+    const seed=force?(Date.now()%1000000):(hash(p.scene+p.text+i)%1000000);
+    try{
+      p.img=await fetchGeneratedImage(realisticPrompt(p,book.style),seed);
+      p.prompt=realisticPrompt(p,book.style)+' (generated picture)';
+      done++;
+    }catch(e){
+      svgFallback(p,book.style);
+      if(statusEl) statusEl.textContent='Picture couldn\'t be generated right now — used the built-in picture for page '+p.n+'.';
+    }
+    save(); if(current===book){renderIllus();renderEditor();}
+  }
+  illustrating=false;
+  logHistory('image','Generated pictures: '+done+' of '+todo.length+' pages');
+  if(statusEl&&done===todo.length) statusEl.textContent='Done — '+done+' picture(s) generated.';
+}
+/* Storyboard scenes: the storyboard appears instantly with built-in
+   pictures, then each scene is UPGRADED to a generated picture in
+   the background (same pacing, same silent fallback — a scene never
+   loses its picture). The video render uses whatever picture is
+   current. */
+async function upgradeStoryboardImages(){
+  if(!storyboard.length||upgradingStoryboard) return;
+  const statusEl=document.getElementById('animImgStatus');
+  upgradingStoryboard=true;
+  let done=0;
+  for(let i=0;i<storyboard.length;i++){
+    const s=storyboard[i];
+    if(!s.img||isSVGImg(s.img)){
+      if(statusEl) statusEl.textContent='Generating scene picture '+(done+1)+' of '+storyboard.length+'… please wait.';
+      try{
+        s.img=await fetchGeneratedImage(s.prompt+' — style: Storybook Illustration, children\'s picture book illustration',hash(s.prompt+i)%1000000);
+        done++;
+        const thumbs=document.querySelectorAll('#animOut .scene-thumb-img');
+        if(thumbs[i]) thumbs[i].src=s.img;
+      }catch(e){
+        if(statusEl) statusEl.textContent='A scene picture couldn\'t be generated right now — kept the built-in picture for scene '+s.n+'.';
+      }
+    } else done++;
+  }
+  upgradingStoryboard=false;
+  if(statusEl&&done===storyboard.length) statusEl.textContent='Done — '+done+' scene picture(s) generated.';
+  save();
+}
+/* Comic panels: same pattern — panels appear instantly with built-in
+   pictures, then upgrade to generated pictures in the background. */
+async function upgradeComicImages(panels){
+  if(!panels||!panels.length||upgradingComic) return;
+  const statusEl=document.getElementById('comicImgStatus');
+  upgradingComic=true;
+  let done=0;
+  for(let i=0;i<panels.length;i++){
+    const p=panels[i];
+    if(!p.img||isSVGImg(p.img)){
+      if(statusEl) statusEl.textContent='Generating comic picture '+(done+1)+' of '+panels.length+'… please wait.';
+      try{
+        p.img=await fetchGeneratedImage(p.text+' — '+bibleText()+' — Comic style, children\'s comic panel',hash(p.text+i)%1000000);
+        done++;
+        const el=document.getElementById('comic-panel-img-'+i);
+        if(el) el.src=p.img;
+      }catch(e){
+        if(statusEl) statusEl.textContent='A comic picture couldn\'t be generated right now — kept the built-in picture for panel '+p.n+'.';
+      }
+    } else done++;
+  }
+  upgradingComic=false;
+  if(statusEl&&done===panels.length) statusEl.textContent='Done — '+done+' comic picture(s) generated.';
+  save();
+}
 function renderIllus(){const el=document.getElementById('illusOut');if(!el||!current)return;el.innerHTML=current.pages.map((p,i)=>'<div class="page-card">'+(p.img?'<img src="'+p.img+'" alt="Illustration page '+p.n+'">':'<div class="pad muted">No image yet</div>')+'<div class="pad"><strong>Page '+p.n+'</strong><p class="small">'+esc(p.text.slice(0,120))+'</p><div class="row"><button class="btn" onclick="illustratePage('+i+')">↻ Regenerate</button><button class="btn" onclick="editPrompt('+i+')">✏ Edit prompt</button></div>'+(p.prompt?'<p class="small muted">'+esc(p.prompt.slice(0,160))+'</p>':'')+'</div></div>').join('');}
-function editPrompt(i){const t=prompt('Edit image prompt:',current.pages[i].prompt||current.pages[i].scene);if(t!=null){current.pages[i].prompt=t;current.pages[i].img=makeSVG({scene:t,text:current.pages[i].text},current.style);save();renderIllus();renderEditor();}}
+async function editPrompt(i){const t=prompt('Edit image prompt:',current.pages[i].prompt||current.pages[i].scene);if(t!=null){current.pages[i].prompt=t;try{current.pages[i].img=await fetchGeneratedImage(t+' — '+bibleText(),Date.now()%1000000);}catch(e){current.pages[i].img=makeSVG({scene:t,text:current.pages[i].text},current.style);}save();renderIllus();renderEditor();}}
 
 /* ---------- Export / Reader ---------- */
 function exportPDF(kind){if(kind==='comic'){window.print();return;}if(!current){const b=reader.book;if(b){current=b;}else return alert('Open or generate a book first.');}renderBookOut();setTimeout(()=>window.print(),100);}
@@ -225,25 +395,216 @@ function generateStoryboard(){
     scene.img=makeSVG({scene:idea+' — scene '+(i+1)+': '+scene.narration,text:scene.narration},'Storybook Illustration');
     storyboard.push(scene); pos=exit;
   }
+  /* v13: four SMALL blocks, not big stacked cards — a thumbnail with
+     the scene number + short caption. Tap a block to expand its entry,
+     positions, continuity and copy-ready prompt. */
   const out=document.getElementById('animOut');
-  out.innerHTML=storyboard.map((s,i)=>'<div class="book-page"><strong>Scene '+s.n+'</strong>'+(s.img?'<img class="scene-img" src="'+s.img+'" alt="Scene '+s.n+' illustration">':'')+'<p>'+esc(s.narration)+'</p><p class="small">Entry: <strong>'+esc(s.entry)+'</strong> · Start: '+esc(s.start)+' → End: '+esc(s.end)+' · Exit: '+esc(s.exit)+'</p><p class="small muted">Continuity: '+(i===0?'starts centre':('starts at '+storyboard[i-1].end+' (previous scene end)'))+'</p><p class="mono small">'+esc(s.prompt)+'</p><div class="row"><button class="btn" onclick="copyPrompt('+i+')">📋 Copy prompt</button></div></div>').join('');
+  out.innerHTML=storyboard.map((s,i)=>'<div class="scene-thumb" onclick="toggleSceneDetail('+i+')">'+(s.img?'<img class="scene-thumb-img" src="'+s.img+'" alt="Scene '+s.n+' illustration">':'')+'<div class="scene-thumb-body"><strong>Scene '+s.n+'</strong><p>'+esc(s.narration.slice(0,90))+(s.narration.length>90?'…':'')+'</p></div><div class="scene-detail" id="scene-detail-'+i+'" style="display:none"><p class="small">Entry: <strong>'+esc(s.entry)+'</strong> · Start: '+esc(s.start)+' → End: '+esc(s.end)+' · Exit: '+esc(s.exit)+'</p><p class="small muted">Continuity: '+(i===0?'starts centre':('starts at '+storyboard[i-1].end+' (previous scene end)'))+'</p><p class="mono small">'+esc(s.prompt)+'</p><div class="row"><button class="btn" onclick="event.stopPropagation();copyPrompt('+i+')">📋 Copy prompt</button></div></div></div>').join('');
   logHistory('animation','Storyboard: '+n+' scenes — '+idea);save();
+  /* v13: upgrade the scene pictures to the picked image model in the
+     background (built-in pictures stay until each realistic one
+     arrives). */
+  upgradeStoryboardImages();
 }
+function toggleSceneDetail(i){const d=document.getElementById('scene-detail-'+i);if(!d)return;d.style.display=d.style.display==='none'?'block':'none';}
 function copyText(t){if(navigator.clipboard)navigator.clipboard.writeText(t);else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}}
 function copyPrompt(i){copyText(storyboard[i].prompt);alert('Prompt copied.');}
 function copyAllPrompts(){if(!storyboard.length)return alert('Generate a storyboard first.');copyText(storyboard.map(s=>s.prompt).join('\n\n'));alert('All '+storyboard.length+' prompts copied.');}
-let rendering=false, cancelRender=false, lastVideoUrl=null, renderTimer=null;
-function renderVideo(){
-  if(rendering) return;
+/* ---------- Built-in video renderer (v13) ----------
+   v13 fixes — user report: "Videos Generate ஆகமாட்டேங்குது.
+   ஏதாவது ஒரு basic image வச்சு generate ஆகுற video நா generate
+   ஆகணும் இல்ல?" (videos will not generate at all; with at least a
+   basic image a video should generate).
+   1. CANCEL USED TO LEAVE THE RENDERER STUCK. cancelVideoRender()
+      only cleared the interval timer — and the interval was the only
+      code that ever called rec.stop() — so after a Cancel the
+      MediaRecorder kept recording forever, onstop never fired,
+      `rendering` stayed true, and every later Render click silently
+      returned at the `if(rendering) return;` guard until the page was
+      reloaded. Cancel now really stops the recorder (rec.stop() ->
+      onstop resets everything), startRecording() aborts if Cancel was
+      pressed while pictures were loading, rec.onerror resets the
+      state too, and renderVideo() recovers a stuck state instead of
+      silently returning.
+   2. EVERY SCENE ALWAYS HAS A PICTURE. ensureSceneImages()
+      regenerates a makeSVG illustration for any scene missing one,
+      before the storyboard preview, before a render and before the
+      preview fallback — a render can never be a blank/black frame.
+   3. BROWSERS THAT CANNOT RECORD (e.g. Safari on iPhone, no
+      MediaRecorder) no longer hit a dead end: they get a moving
+      in-page preview (canvas loop with zoom/pan + captions + Play/
+      Pause) and a Download-scene-pictures button, with a plain
+      explanation of what happened and what still works.
+   4. The auto-download after a successful render is only a bonus:
+      the finished video stays in the #animVideo player with a working
+      Download button even when the automatic download is blocked
+      (common on mobile). */
+let rendering=false, cancelRender=false, lastVideoUrl=null, renderTimer=null, activeRec=null;
+let previewRAF=null, previewPlaying=false, previewT0=0, previewBaseT=0, previewCtx=null, previewCanvas=null, previewImgs=[], previewPer=0, previewDur=15, previewW=720, previewH=1280, previewFallback=false;
+function ensureSceneImages(){
+  if(!storyboard.length) return;
+  storyboard.forEach(function(s){
+    if(!s.img) s.img=makeSVG({scene:(s.narration||s.prompt||'A story scene'),text:(s.narration||'')},'Storybook Illustration');
+  });
+}
+function loadSceneImages(){
+  return storyboard.map(function(s){
+    const im=new Image();
+    im.src=s.img||makeSVG({scene:(s.narration||''),text:(s.narration||'')},'Storybook Illustration');
+    return im;
+  });
+}
+function wrapCaptionText(ctx,text,maxW){
+  const words=String(text).split(/\s+/);const lines=[];let line='';
+  words.forEach(function(w){const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;});
+  if(line)lines.push(line);return lines;
+}
+/* One scene drawn on a canvas: real illustration with slow Ken Burns
+   zoom/pan, scene badge, full wrapped narration. Shared by the video
+   recorder AND the no-recorder moving preview, so both always show
+   the same pictures. If the picture failed to load, a coloured
+   backdrop + the same caption is drawn — never a blank/black frame. */
+function drawSceneFrame(ctx,img,s,idx,t,per,W,H){
+  ctx.save();
+  ctx.fillStyle='#081a43'; ctx.fillRect(0,0,W,H);
+  if(img&&img.complete&&img.naturalWidth){
+    const local=Math.min(1,Math.max(0,(t-idx*per)/per));
+    const zoom=1.06+local*0.14; /* slow zoom-in across the scene */
+    const drift=(idx%2===0?-1:1)*local*0.05*W; /* gentle pan, alternating direction */
+    const scale=Math.max(W/img.naturalWidth,H/img.naturalHeight)*zoom;
+    const dw=img.naturalWidth*scale, dh=img.naturalHeight*scale;
+    ctx.drawImage(img,(W-dw)/2+drift,(H-dh)/2,dw,dh);
+  }else{
+    ctx.fillStyle=['#fde68a','#bae6fd','#fbcfe8','#d1fae5'][idx%4]; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(W/2,H*0.4,Math.min(W,H)*0.18,0,7); ctx.fill();
+    ctx.fillStyle='#1e1b2e'; ctx.beginPath(); ctx.arc(W/2-30,H*0.38,8,0,7); ctx.arc(W/2+30,H*0.38,8,0,7); ctx.fill();
+    ctx.strokeStyle='#1e1b2e'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(W/2,H*0.42,40,0.2,Math.PI-0.2); ctx.stroke();
+  }
+  ctx.restore();
+  /* Scene badge, top-left */
+  const badge='SCENE '+(idx+1)+' / '+storyboard.length;
+  ctx.font='bold '+Math.max(20,Math.round(W*0.022))+'px sans-serif';
+  const bw=ctx.measureText(badge).width+28;
+  const bh=Math.max(34,Math.round(W*0.032));
+  ctx.fillStyle='rgba(8,26,67,0.72)';
+  if(ctx.roundRect){ctx.beginPath(); ctx.roundRect(18,18,bw,bh,16); ctx.fill();}else{ctx.fillRect(18,18,bw,bh);}
+  ctx.fillStyle='#ffd52e'; ctx.fillText(badge,32,18+bh-Math.max(10,Math.round(W*0.009)));
+  /* Full narration as caption, wrapped — never truncated */
+  const fs=Math.max(20,Math.round(W*0.026));
+  ctx.font=fs+'px sans-serif';
+  const lines=wrapCaptionText(ctx,s.narration,W-56);
+  const lh=Math.round(fs*1.45); const bandH=lines.length*lh+28;
+  ctx.fillStyle='rgba(0,0,0,0.68)'; ctx.fillRect(0,H-bandH,W,bandH);
+  ctx.fillStyle='#fff';
+  lines.forEach(function(ln,i){ctx.fillText(ln,28,H-bandH+18+(i+1)*lh-Math.round(fs*0.35));});
+  return idx;
+}
+/* Reset the renderer to idle: button back, cancel hidden, bar at 0. */
+function resetRenderUI(msg){
+  rendering=false; cancelRender=false; activeRec=null;
+  if(renderTimer){clearInterval(renderTimer);renderTimer=null;}
+  const btn=document.getElementById('renderBtn'), cancelBtn=document.getElementById('renderCancel'),
+    bar=document.getElementById('renderProgress'), status=document.getElementById('renderStatus');
+  if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';}
+  if(cancelBtn) cancelBtn.style.display='none';
+  if(bar) bar.style.width='0%';
+  if(status&&msg) status.textContent=msg;
+}
+function stopPreview(){
+  previewPlaying=false;
+  if(previewRAF){cancelAnimationFrame(previewRAF);previewRAF=null;}
+  const pb=document.getElementById('previewPlayBtn');
+  if(pb) pb.textContent='▶ Play preview';
+}
+function downloadSceneImages(){
+  ensureSceneImages();
+  if(!storyboard.length)return alert('Generate a storyboard first.');
+  storyboard.forEach(function(s,i){
+    const a=document.createElement('a');a.href=s.img;
+    a.download='vitalize-storynest-scene-'+(i+1)+'.svg';document.body.appendChild(a);a.click();a.remove();
+  });
+}
+function previewLoop(){
+  if(!previewPlaying||!previewCtx) return;
+  const t=previewBaseT+(performance.now()-previewT0)/1000;
+  const loopT=t%previewDur;
+  const idx=Math.min(storyboard.length-1,Math.floor(loopT/previewPer));
+  drawSceneFrame(previewCtx,previewImgs[idx],storyboard[idx],idx,loopT,previewPer,previewW,previewH);
+  previewRAF=requestAnimationFrame(previewLoop);
+}
+function togglePreview(){
+  if(!previewCtx) return;
+  if(!previewPlaying){
+    previewPlaying=true; previewT0=performance.now();
+    const pb=document.getElementById('previewPlayBtn'); if(pb) pb.textContent='⏸ Pause preview';
+    previewLoop(); return;
+  }
+  previewPlaying=false; previewBaseT=previewBaseT+(performance.now()-previewT0)/1000;
+  if(previewRAF){cancelAnimationFrame(previewRAF);previewRAF=null;}
+  const pb=document.getElementById('previewPlayBtn'); if(pb) pb.textContent='▶ Play preview';
+}
+/* Moving-preview fallback for browsers that cannot record video
+   (notably Safari on iPhone: no MediaRecorder). The user still gets
+   a moving video — scene pictures with zoom/pan + captions, looping,
+   with Play/Pause and Download-scene-pictures — plus a plain
+   explanation, never a dead end with no video at all. */
+function startPreviewFallback(reason){
+  stopPreview();
+  previewFallback=true;
   if(!storyboard.length) generateStoryboard();
   if(!storyboard.length){alert('Generate a storyboard first.');return;}
+  ensureSceneImages();
+  const status=document.getElementById('renderStatus'), err=document.getElementById('renderError'),
+    btn=document.getElementById('renderBtn'), cancelBtn=document.getElementById('renderCancel'),
+    bar=document.getElementById('renderProgress'), pb=document.getElementById('previewPlayBtn'),
+    db=document.getElementById('previewDownloadBtn'), note=document.getElementById('renderNote');
+  resetRenderUI('');
+  const ratio=document.getElementById('anRatio').value, dur=parseInt(document.getElementById('anDur').value)||15;
+  const q=document.getElementById('anQuality').value;
+  previewW=ratio==='9:16'?(q==='1080p'?1080:720):ratio==='16:9'?(q==='1080p'?1920:1280):(q==='1080p'?1080:720);
+  previewH=ratio==='9:16'?(q==='1080p'?1920:1280):ratio==='16:9'?(q==='1080p'?1080:720):(q==='1080p'?1080:720);
+  previewDur=dur; previewPer=dur/storyboard.length; previewBaseT=0;
+  const canvas=document.createElement('canvas');canvas.width=previewW;canvas.height=previewH;canvas.style.width='100%';canvas.style.maxWidth='480px';canvas.style.borderRadius='16px';canvas.style.display='block';
+  const preview=document.getElementById('renderPreview'); if(preview){preview.innerHTML='';preview.appendChild(canvas);}
+  previewCanvas=canvas; previewCtx=canvas.getContext('2d');
+  previewImgs=loadSceneImages();
+  if(pb) pb.style.display='inline-block';
+  if(db) db.style.display='inline-block';
+  if(status) status.textContent='Moving preview playing below — your scene pictures with zoom/pan and captions.';
+  if(err) err.textContent=reason+' This browser cannot record a video file in the page, so there is no .webm download here. What still works: the moving preview below, Download scene pictures, and the copy-ready prompts for Runway / Pika / Luma in Settings → Providers.';
+  if(note) note.textContent='Preview mode: this browser cannot record video in-page (Safari on iPhone does not support MediaRecorder). Try Chrome or Edge on a desktop for a downloadable .webm file.';
+  const imgsReady=Promise.all(previewImgs.map(function(im){return im.complete?Promise.resolve():new Promise(function(res){im.onload=res;im.onerror=res;});}));
+  Promise.race([imgsReady,new Promise(function(res){setTimeout(res,1500);})]).then(function(){
+    if(!previewCtx) return;
+    drawSceneFrame(previewCtx,previewImgs[0],storyboard[0],0,0,previewPer,previewW,previewH);
+    previewPlaying=true; previewT0=performance.now();
+    if(pb) pb.textContent='⏸ Pause preview';
+    previewLoop();
+  });
+  logHistory('video','Moving preview started ('+reason.slice(0,80)+')'); save();
+}
+function renderVideo(){
+  stopPreview();
+  previewFallback=false;
+  /* v13: recover a stuck renderer instead of silently doing nothing.
+     After a Cancel the old code left `rendering` true forever; if the
+     recorder is gone/inactive there is no render in progress, so
+     reset and carry on. */
+  if(rendering){
+    if(!activeRec||activeRec.state==='inactive'){ resetRenderUI('Ready — tap Render to try again.'); }
+    else return;
+  }
+  if(!storyboard.length) generateStoryboard();
+  if(!storyboard.length){alert('Generate a storyboard first.');return;}
+  ensureSceneImages();
   const status=document.getElementById('renderStatus'), err=document.getElementById('renderError'),
     bar=document.getElementById('renderProgress'), btn=document.getElementById('renderBtn'),
-    cancelBtn=document.getElementById('renderCancel'), dl=document.getElementById('downloadVideoBtn');
+    cancelBtn=document.getElementById('renderCancel'), dl=document.getElementById('downloadVideoBtn'),
+    pb=document.getElementById('previewPlayBtn'), db=document.getElementById('previewDownloadBtn');
   if(err) err.textContent=''; if(dl) dl.style.display='none';
+  if(pb) pb.style.display='none'; if(db) db.style.display='none';
   if(typeof MediaRecorder==='undefined'){
-    if(status) status.textContent='This browser cannot record video.';
-    if(err) err.textContent='MediaRecorder is not supported in this browser. Please try Chrome or Edge on a desktop — Safari on iPhone does not support in-browser video recording here. Your storyboard and copy-ready prompts above still work in Runway / Pika / Luma.';
+    startPreviewFallback('This browser cannot record video (MediaRecorder is not supported here — Safari on iPhone does not support in-browser video recording).');
     return;
   }
   const ratio=document.getElementById('anRatio').value, dur=parseInt(document.getElementById('anDur').value)||60;
@@ -254,99 +615,83 @@ function renderVideo(){
   const preview=document.getElementById('renderPreview'); if(preview){preview.innerHTML='';preview.appendChild(canvas);}
   const ctx=canvas.getContext('2d');
   if(!canvas.captureStream){
-    if(status) status.textContent='This browser cannot capture the canvas.';
-    if(err) err.textContent='canvas.captureStream is not supported in this browser. Please try Chrome or Edge on a desktop.';
+    startPreviewFallback('This browser cannot capture the canvas as video.');
     return;
   }
+  /* v13: download format — MP4 / WebM, honestly. The user picks a
+     format; the recorder tries that format's mime types first
+     (Safari records MP4, Chrome records WebM). If the picked format
+     is not supported here, the other format is used instead and the
+     note next to Download says so plainly — a WebM file is NEVER
+     renamed to .mp4. The filename always matches the real format. */
+  const fmt=((document.getElementById('dlFormat')||{}).value)||'webm';
+  const dlNote=document.getElementById('dlFormatNote'); if(dlNote) dlNote.textContent='';
+  const mp4Mimes=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1.42E01E','video/mp4'];
+  const webmMimes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  const supported=function(list){return list.find(function(m){try{return MediaRecorder.isTypeSupported(m);}catch(e){return false;}})||'';};
+  let mime=supported(fmt==='mp4'?mp4Mimes:webmMimes), mimeNote='';
+  if(!mime){ mime=supported(fmt==='mp4'?webmMimes:mp4Mimes); if(mime) mimeNote='You picked '+fmt.toUpperCase()+', but this browser records '+(mime.indexOf('mp4')>=0?'MP4':'WebM')+' only.'; }
+  if(!mime){ startPreviewFallback('This browser cannot record video in MP4 or WebM format.'); return; }
+  const actualExt=mime.indexOf('mp4')>=0?'mp4':'webm';
   let rec;
   try{
     const stream=canvas.captureStream(30);
-    const mimes=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
-    const mime=mimes.find(m=>{try{return MediaRecorder.isTypeSupported(m);}catch(e){return false;}})||'';
-    rec=new MediaRecorder(stream, mime?{mimeType:mime,videoBitsPerSecond:5000000}:undefined);
+    rec=new MediaRecorder(stream, {mimeType:mime,videoBitsPerSecond:5000000});
   }catch(e){
-    if(status) status.textContent='Video recorder could not start.';
-    if(err) err.textContent='Recorder error: '+(e&&e.message?e.message:e)+'. Try Chrome or Edge on a desktop, then click Render again.';
+    startPreviewFallback('Video recorder could not start in this browser ('+(e&&e.message?e.message:e)+').');
     return;
   }
-  rendering=true; cancelRender=false;
+  activeRec=rec; rendering=true; cancelRender=false;
   if(btn){btn.disabled=true;btn.textContent='⏳ Rendering…';}
   if(cancelBtn) cancelBtn.style.display='inline-block';
   if(status) status.textContent='Rendering 0s / '+dur+'s · Scene 1/'+storyboard.length+' … keep this tab open';
   if(bar) bar.style.width='0%';
   const chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
-  rec.onerror=e=>{if(status)status.textContent='Recording error — please try again.';if(err)err.textContent='Recorder error: '+((e&&e.error&&e.error.name)||'unknown')+'. Try a shorter video (15s) in Chrome on a desktop.';};
+  rec.onerror=e=>{
+    /* v13: a recorder error used to leave `rendering` true forever too. */
+    const msg='Recorder error: '+((e&&e.error&&e.error.name)||'unknown')+'.';
+    resetRenderUI('');
+    if(status)status.textContent='Recording failed — showing the moving preview instead.';
+    if(err)err.textContent=msg+' Try a shorter video (15s) in Chrome on a desktop.';
+    startPreviewFallback(msg+' The recorder stopped, so here is the moving preview instead.');
+  };
   rec.onstop=()=>{
-    rendering=false;
+    const wasPreview=previewFallback;
+    rendering=false; activeRec=null;
     if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';}
     if(cancelBtn) cancelBtn.style.display='none';
-    if(!chunks.length||cancelRender){ if(status)status.textContent=cancelRender?'Render cancelled.':'No video data was recorded — please try again in Chrome on a desktop.'; if(bar)bar.style.width='0%'; return; }
-    const blob=new Blob(chunks,{type:'video/webm'}); const url=URL.createObjectURL(blob); lastVideoUrl=url;
-    const v=document.getElementById('animVideo'); v.src=url; v.style.display='block'; v.load();
-    if(dl){dl.href=url; dl.download='vitalize-storynest-video-'+dur+'s.webm'; dl.style.display='inline-block';}
-    if(status) status.textContent='Done — '+dur+'s · '+ratio+' · '+q+'. Play it above or tap Download video.';
-    document.getElementById('renderNote').textContent='Built-in renderer: canvas + MediaRecorder in this browser — each scene shows its own illustration from your storyboard, with slow zoom/pan. Not an external AI video model.';
-    try{const a=document.createElement('a');a.href=url;a.download='vitalize-storynest-video-'+dur+'s.webm';document.body.appendChild(a);a.click();a.remove();}catch(e){}
+    if(wasPreview) return; /* a preview fallback already took over the status text */
+    if(!chunks.length||cancelRender){ if(status)status.textContent=cancelRender?'Render cancelled — tap Render again to try again.':'No video data was recorded — tap Render again, or try Chrome on a desktop.'; if(bar)bar.style.width='0%'; return; }
+    const blob=new Blob(chunks,{type:mime||'video/webm'}); const url=URL.createObjectURL(blob); lastVideoUrl=url;
+    /* v13: the live preview canvas is replaced by the finished video
+       player, so the Animation page keeps fitting one screen. */
+    const pv=document.getElementById('renderPreview'); if(pv) pv.innerHTML='';
+    const v=document.getElementById('animVideo'); if(v){v.src=url; v.style.display='block'; v.controls=true; v.load();}
+    if(dl){dl.href=url; dl.download='vitalize-storynest-video-'+dur+'s.'+actualExt; dl.textContent='⬇ Download video (.'+actualExt+')'; dl.style.display='inline-block';}
+    if(dlNote) dlNote.textContent=mimeNote?mimeNote+' The file is .'+actualExt+' — convert it to '+fmt.toUpperCase()+' with VLC, CloudConvert or ffmpeg.':('Recorded as a real '+actualExt.toUpperCase()+' file in this browser.');
+    if(status) status.textContent='Done — '+dur+'s · '+ratio+' · '+q+' · '+actualExt.toUpperCase()+'.';
+    const note=document.getElementById('renderNote'); if(note) note.textContent='Video saved in the player — tap Download if it did not download automatically.';
+    /* v13: auto-download is a bonus, not the only copy — on mobile it
+       is often blocked, so the player + Download button above are the
+       reliable copy. Never let a blocked auto-download look like a
+       failure. */
+    try{const a=document.createElement('a');a.href=url;a.download='vitalize-storynest-video-'+dur+'s.'+actualExt;document.body.appendChild(a);a.click();a.remove();}catch(e){}
     logHistory('video','Rendered '+dur+'s video '+ratio+' '+q); save();
   };
   const per=dur/storyboard.length; let start=performance.now();
-  /* v12: the video draws each scene's REAL illustration (generated in
-     generateStoryboard from the scene narration + Character Bible),
-     with a slow Ken Burns zoom/pan so the picture moves — plus the
-     character, the full narration as caption, and the scene number.
-     No more flat colour + generic smiley face. Images are preloaded
-     before recording starts; if one fails to load, that scene falls
-     back to a coloured backdrop so the render never stalls. */
-  const sceneImgs=storyboard.map(s=>{const im=new Image();im.src=s.img||makeSVG({scene:s.narration,text:s.narration},'Storybook Illustration');return im;});
-  function wrapText(text,maxW){
-    const words=String(text).split(/\s+/);const lines=[];let line='';
-    words.forEach(w=>{const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;});
-    if(line)lines.push(line);return lines;
-  }
-  function drawFrame(t){
-    const idx=Math.min(storyboard.length-1,Math.floor(t/per)); const local=Math.min(1,(t-idx*per)/per); const s=storyboard[idx];
-    const img=sceneImgs[idx];
-    ctx.save();
-    ctx.fillStyle='#081a43'; ctx.fillRect(0,0,W,H);
-    if(img&&img.complete&&img.naturalWidth){
-      const zoom=1.06+local*0.14; /* slow zoom-in across the scene */
-      const drift=(idx%2===0?-1:1)*local*0.05*W; /* gentle pan, alternating direction */
-      const scale=Math.max(W/img.naturalWidth,H/img.naturalHeight)*zoom;
-      const dw=img.naturalWidth*scale, dh=img.naturalHeight*scale;
-      ctx.drawImage(img,(W-dw)/2+drift,(H-dh)/2,dw,dh);
-    }else{
-      ctx.fillStyle=['#fde68a','#bae6fd','#fbcfe8','#d1fae5'][idx%4]; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(W/2,H*0.4,Math.min(W,H)*0.18,0,7); ctx.fill();
-      ctx.fillStyle='#1e1b2e'; ctx.beginPath(); ctx.arc(W/2-30,H*0.38,8,0,7); ctx.arc(W/2+30,H*0.38,8,0,7); ctx.fill();
-      ctx.strokeStyle='#1e1b2e'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(W/2,H*0.42,40,0.2,Math.PI-0.2); ctx.stroke();
-    }
-    ctx.restore();
-    /* Scene badge, top-left */
-    const badge='SCENE '+(idx+1)+' / '+storyboard.length;
-    ctx.font='bold '+Math.max(20,Math.round(W*0.022))+'px sans-serif';
-    const bw=ctx.measureText(badge).width+28;
-    ctx.fillStyle='rgba(8,26,67,0.72)';
-    const bh=Math.max(34,Math.round(W*0.032));
-    if(ctx.roundRect){ctx.beginPath(); ctx.roundRect(18,18,bw,bh,16); ctx.fill();}else{ctx.fillRect(18,18,bw,bh);}
-    ctx.fillStyle='#ffd52e'; ctx.fillText(badge,32,18+Math.max(34,Math.round(W*0.032))-Math.max(10,Math.round(W*0.009)));
-    /* Full narration as caption, wrapped — never truncated */
-    const fs=Math.max(20,Math.round(W*0.026));
-    ctx.font=fs+'px sans-serif';
-    const lines=wrapText(s.narration,W-56);
-    const lh=Math.round(fs*1.45); const bandH=lines.length*lh+28;
-    ctx.fillStyle='rgba(0,0,0,0.68)'; ctx.fillRect(0,H-bandH,W,bandH);
-    ctx.fillStyle='#fff';
-    lines.forEach((ln,i)=>{ctx.fillText(ln,28,H-bandH+18+(i+1)*lh-Math.round(fs*0.35));});
-    return idx;
-  }
+  const sceneImgs=loadSceneImages();
   function startRecording(){
+    /* v13: Cancel pressed while pictures were still loading used to be
+       ignored — the render started anyway. Abort instead. */
+    if(cancelRender){ resetRenderUI('Render cancelled — tap Render again to try again.'); return; }
     start=performance.now(); /* clock starts when recording starts, not while pictures were loading */
-    drawFrame(0);
-    try{ rec.start(250); }catch(e){ rendering=false; if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';} if(err)err.textContent='Recorder could not start: '+(e&&e.message?e.message:e); return; }
+    drawSceneFrame(ctx,sceneImgs[0],storyboard[0],0,0,per,W,H);
+    try{ rec.start(250); }catch(e){ rendering=false; activeRec=null; if(btn){btn.disabled=false;btn.textContent='▶ Render video in browser';} if(err)err.textContent='Recorder could not start: '+(e&&e.message?e.message:e); return; }
     renderTimer=setInterval(()=>{
       const t=(performance.now()-start)/1000;
-      if(cancelRender||t>=dur){ clearInterval(renderTimer); try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} return; }
-      const idx=drawFrame(t);
+      if(cancelRender||t>=dur){ clearInterval(renderTimer); renderTimer=null; try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} return; }
+      const idx=Math.min(storyboard.length-1,Math.floor(t/per));
+      drawSceneFrame(ctx,sceneImgs[idx],storyboard[idx],idx,t,per,W,H);
       const done=Math.floor(t);
       if(status) status.textContent='Rendering… '+done+'s / '+dur+'s · Scene '+(idx+1)+'/'+storyboard.length+' — keep this tab open';
       if(bar) bar.style.width=Math.round(t/dur*100)+'%';
@@ -357,7 +702,25 @@ function renderVideo(){
   const imgsReady=Promise.all(sceneImgs.map(im=>im.complete?Promise.resolve():new Promise(res=>{im.onload=res;im.onerror=res;})));
   Promise.race([imgsReady,new Promise(res=>setTimeout(res,1500))]).then(startRecording);
 }
-function cancelVideoRender(){ if(!rendering) return; cancelRender=true; if(renderTimer) clearInterval(renderTimer); }
+function cancelVideoRender(){
+  /* v13: Cancel must REALLY stop the recorder. The old code only
+     cleared the interval — and the interval was the only place that
+     called rec.stop() — so the recorder kept running, onstop never
+     fired and the renderer stayed stuck on `rendering=true` forever.
+     Now: stop a playing preview, or stop the recorder (onstop resets
+     the UI), or — if pictures are still loading and there is no
+     recorder yet — reset now and keep the cancel flag so
+     startRecording() aborts when the preload finishes. */
+  if(previewPlaying){ stopPreview(); const st=document.getElementById('renderStatus'); if(st) st.textContent='Preview stopped.'; return; }
+  if(!rendering) return;
+  cancelRender=true;
+  if(renderTimer){clearInterval(renderTimer);renderTimer=null;}
+  if(activeRec && activeRec.state!=='inactive'){ try{activeRec.stop();}catch(e){ resetRenderUI('Render cancelled — tap Render again to try again.'); } }
+  else{
+    resetRenderUI('Render cancelled — tap Render again to try again.');
+    cancelRender=true; /* keep the flag: startRecording() must abort */
+  }
+}
 
 /* ---------- Music / Comic ---------- */
 function generateSong(){
@@ -372,16 +735,20 @@ function generateSong(){
 function generateComic(){
   const idea=document.getElementById('coIdea').value;const n=Math.max(4,Math.min(8,parseInt(document.getElementById('coPanels').value)||6));
   const layout=document.getElementById('coLayout').value;
-  const panels=[];for(let i=0;i<n;i++)panels.push({n:i+1,dialogue:i===0?'"Let\'s build it!" said Bolt.':i===n-1?'"We did it!" cheered Pip.':'"Look! Up there!" laughed Pip.',text:'Panel '+(i+1)+': '+idea+' — moment '+(i+1)+' of '+n+'.'});
+  const panels=[];for(let i=0;i<n;i++)panels.push({n:i+1,dialogue:i===0?'"Let\'s build it!" said Bolt.':i===n-1?'"We did it!" cheered Pip.':'"Look! Up there!" laughed Pip.',text:'Panel '+(i+1)+': '+idea+' — moment '+(i+1)+' of '+n+'.',img:makeSVG({scene:'Panel '+(i+1)+': '+idea+' — moment '+(i+1)+' of '+n+'.',text:'"Let\'s build it!"'},'Comic')});
   const comic={id:uid(),kind:'comic',title:idea,desc:layout+' · '+n+' panels',created:new Date().toISOString(),panels};
   state.projects.unshift(comic);
-  document.getElementById('comicOut').innerHTML='<div class="page-grid">'+panels.map(p=>'<div class="page-card"><img src="'+makeSVG({scene:p.text,text:p.dialogue},'Comic')+'" alt="Comic panel"><div class="pad"><strong>Panel '+p.n+'</strong><p>'+esc(p.text)+'</p><p><strong>'+esc(p.dialogue)+'</strong></p></div></div>').join('')+'</div>';
+  document.getElementById('comicOut').innerHTML='<div class="page-grid">'+panels.map((p,i)=>'<div class="page-card"><img id="comic-panel-img-'+i+'" src="'+p.img+'" alt="Comic panel"><div class="pad"><strong>Panel '+p.n+'</strong><p>'+esc(p.text)+'</p><p><strong>'+esc(p.dialogue)+'</strong></p></div></div>').join('')+'</div>';
   logHistory('comic','Generated comic: '+idea+' ('+n+' panels)');save();
+  /* v13: upgrade the panels to the picked image model in the
+     background (built-in pictures stay until each realistic one
+     arrives). */
+  upgradeComicImages(panels);
 }
 
 /* ---------- Providers / Settings ---------- */
 const PROVIDERS=[{id:'runway',name:'Runway (video)',endpoint:'https://api.runwayml.com/v1'},{id:'pika',name:'Pika (video)',endpoint:'https://api.pika.art/v1'},{id:'luma',name:'Luma Dream Machine (video)',endpoint:'https://api.lumalabs.ai/dream-machine/v1'},{id:'kling',name:'Kling (video)',endpoint:'https://api.klingai.com/v1'},{id:'veo',name:'Veo / Google (video)',endpoint:'https://generativelanguage.googleapis.com/v1beta'},{id:'openai',name:'OpenAI (LLM / image)',endpoint:'https://api.openai.com/v1'}];
-function renderProviders(){const el=document.getElementById('providerList');if(!el)return;el.innerHTML=PROVIDERS.map(p=>{const s=state.providers[p.id]||{};const st=s.verified?'✅ Verified':(s.key?'Key saved — not verified':'Not connected');return '<div class="card"><h3>'+esc(p.name)+'</h3><p class="muted small">'+esc(p.endpoint)+'</p><p><strong>'+st+'</strong></p><input type="password" id="key-'+p.id+'" placeholder="API key (stored only in this browser)" value="'+esc(s.key||'')+'"><div class="row"><button class="btn" onclick="saveKey(\''+p.id+'\')">Save key</button><button class="btn" onclick="testProvider(\''+p.id+'\')">Test Connection</button></div><p class="small" id="test-'+p.id+'"></p></div>';}).join('');}
+function renderProviders(){const el=document.getElementById('providerList');if(!el)return;el.innerHTML=PROVIDERS.map(p=>{const s=state.providers[p.id]||{};const st=s.verified?'✅ Verified':(s.key?'Key saved — not verified':'Not connected');return '<div class="card"><h3>'+esc(p.name)+'</h3><p class="muted small">'+esc(p.endpoint)+'</p>'+'<p><strong>'+st+'</strong></p><input type="password" id="key-'+p.id+'" placeholder="API key (stored only in this browser)" value="'+esc(s.key||'')+'"><div class="row"><button class="btn" onclick="saveKey(\''+p.id+'\')">Save key</button><button class="btn" onclick="testProvider(\''+p.id+'\')">Test Connection</button></div><p class="small" id="test-'+p.id+'"></p></div>';}).join('');}
 function saveKey(id){const v=document.getElementById('key-'+id).value.trim();state.providers[id]={key:v,verified:false};save();renderProviders();document.getElementById('test-'+id).textContent='Key saved — not verified. Press Test Connection.';}
 async function testProvider(id){const p=PROVIDERS.find(x=>x.id===id);const s=state.providers[id]||{};const el=document.getElementById('test-'+id);if(!s.key){el.textContent='No key saved — cannot test.';return;}el.textContent='Testing…';try{const r=await fetch(p.endpoint,{method:'GET',headers:s.key?{Authorization:'Bearer '+s.key}:{},mode:'cors'});if(r.ok||r.status===401||r.status===403){s.verified=r.ok;save();renderProviders();document.getElementById('test-'+id).textContent=r.ok?'✅ Verified — provider responded.':'Provider responded '+r.status+' — key not accepted. Key saved — not verified.';}else{s.verified=false;save();renderProviders();document.getElementById('test-'+id).textContent='Provider responded '+r.status+'. Key saved — not verified.';}}catch(e){s.verified=false;save();renderProviders();const t=document.getElementById('test-'+id);if(t)t.textContent='Could not reach provider from this browser (network/CORS). Key saved — not verified. This does not claim a fake connection.';}}
 function setTheme(t){state.theme=t;document.body.className=t==='dark'?'dark':'';save();}

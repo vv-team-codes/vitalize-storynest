@@ -11,10 +11,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="StoryNest">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=14">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="hero.css?v=12">
-<link rel="stylesheet" href="hero-bg.css?v=12">
+<link rel="stylesheet" href="hero.css?v=14">
+<link rel="stylesheet" href="hero-bg.css?v=14">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body class="on-home">
@@ -101,6 +101,7 @@
 
 <!-- PRICING -->
 <section class="page" id="page-pricing">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>✨ Pricing — Free, Unlimited, Private</h1>
   <p class="muted">No subscriptions, no tokens, no daily limits. Everything in the built-in engine is free.</p>
   <div class="grid3">
@@ -113,6 +114,7 @@
 
 <!-- BOOK -->
 <section class="page" id="page-book">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>📚 AI Picture Book Generator</h1>
   <p class="muted">Step 1 idea → Step 2 settings → Step 3 generate → Step 4 characters → Step 5 illustrations → Step 6 editor → Step 7 export. Everything saves automatically to My Projects.</p>
   <div class="steps"><span class="step on" data-s="1">1 Idea</span><span class="step" data-s="2">2 Settings</span><span class="step" data-s="3">3 Story</span><span class="step" data-s="4">4 Characters</span><span class="step" data-s="5">5 Illustrations</span><span class="step" data-s="6">6 Editor</span><span class="step" data-s="7">7 Export</span></div>
@@ -164,7 +166,9 @@
   </div>
 
   <div class="card"><h3>Step 5 — Illustrations</h3>
-    <div class="row"><button class="btn primary" onclick="illustrateAll()">🎨 Illustrate all pages</button><button class="btn" onclick="illustrateAll(true)">↻ Regenerate all</button><span class="muted small">Each picture is generated in code from the page's scene brief + Character Bible + chosen style. No stock photo is passed off as generated art.</span></div>
+    <p class="muted small">Every page gets a picture — first a built-in illustration, then a generated picture, one page at a time. Each picture is generated separately, so the same character may look a little different on different pages. If a picture can't be generated right now, the built-in illustration stays — a page is never left without a picture. Pictures are generated for everyone from the same service, with a fair daily limit shared across all users, so a busy day can run out — try again tomorrow.</p>
+    <p id="illusStatus" class="muted small"></p>
+    <div class="row"><button class="btn primary" onclick="illustrateAll()">🎨 Illustrate all pages</button><button class="btn" onclick="illustrateAll(true)">↻ Regenerate all</button><span class="muted small">Tip: pictures appear one by one — a 6-page book takes a little while.</span></div>
     <div id="illusOut" class="page-grid"></div>
   </div>
 
@@ -191,6 +195,7 @@
 
 <!-- STORY (text-only tale — its own flow, NOT the Picture Book) -->
 <section class="page" id="page-story">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>✦ Tell it as a Story</h1>
   <p class="muted">A text-only tale in chapters — no pictures, no pages to illustrate. Just the story, told well. Everything saves automatically to My Projects.</p>
   <div class="card"><h3>Step 1 — Story idea</h3>
@@ -224,44 +229,57 @@
 
 <!-- ANIMATION -->
 <section class="page" id="page-animation">
-  <h1>🎬 AI Animation Studio</h1>
-  <p class="muted">Storyboard + continuity-locked, copy-ready video prompts for an external provider — plus a built-in renderer that makes a real MP4/WebM in this browser, no key needed.</p>
-  <div class="card"><h3>Storyboard</h3>
-    <textarea id="anIdea" rows="2" placeholder="e.g. Milo the fox follows a glowing lantern across the meadow"></textarea>
-    <div class="row">
-      <button class="btn" onclick="randomAnimationIdea()">🎲 Random idea</button>
-      <span class="muted small">Tap for a surprise topic, or type your own.</span>
-    </div>
-    <div class="row">
-      <label>Scenes <input type="number" id="anScenes" min="3" max="8" value="4" style="width:70px"></label>
-      <label>Duration <select id="anDur"><option value="15">15s</option><option value="30">30s</option><option value="60" selected>1 min</option><option value="90">1.5 min</option><option value="120">2 min</option></select></label>
-      <label>Ratio <select id="anRatio"><option value="9:16" selected>9:16 (Shorts / Reels)</option><option value="16:9">16:9 (YouTube)</option><option value="1:1">1:1 (Square)</option></select></label>
-      <label>Quality <select id="anQuality"><option value="720p" selected>720p</option><option value="1080p">1080p</option></select></label>
-      <button class="btn primary" onclick="generateStoryboard()">✨ Generate storyboard</button>
+  <div class="anim-head"><button class="btn back-btn" type="button" onclick="go('home')">← Back</button><h1>🎬 AI Animation Studio</h1></div>
+  <p class="muted anim-intro">Storyboard + continuity-locked, copy-ready video prompts for an external provider — plus a built-in renderer that makes a real video in this browser, no key needed.</p>
+  <div class="card anim-idea-card"><h3>Storyboard</h3>
+    <div class="anim-idea-grid">
+      <div>
+        <textarea id="anIdea" rows="1" placeholder="e.g. Milo the fox follows a glowing lantern across the meadow"></textarea>
+        <div class="row">
+          <button class="btn" onclick="randomAnimationIdea()">🎲 Random idea</button>
+          <span class="muted small">Tap for a surprise topic, or type your own.</span>
+        </div>
+      </div>
+      <div>
+        <div class="row anim-settings">
+          <label>Scenes <input type="number" id="anScenes" min="3" max="8" value="4" style="width:70px"></label>
+          <label>Duration <select id="anDur"><option value="15">15s</option><option value="30">30s</option><option value="60" selected>1 min</option><option value="90">1.5 min</option><option value="120">2 min</option></select></label>
+          <label>Ratio <select id="anRatio"><option value="9:16" selected>9:16 (Shorts)</option><option value="16:9">16:9 (YouTube)</option><option value="1:1">1:1 (Square)</option></select></label>
+          <label>Quality <select id="anQuality"><option value="720p" selected>720p</option><option value="1080p">1080p</option></select></label>
+        </div>
+        <button class="btn primary" onclick="generateStoryboard()">✨ Generate storyboard</button>
+      </div>
     </div>
     <div id="bibleNote" class="mono small"></div>
   </div>
-  <div class="card"><h3>Scenes — continuity lock</h3>
-    <p class="muted small">Each scene lists entry side/direction, start position, end position and exit side/direction. Scene N+1 starts exactly where Scene N ended — no teleporting, no character suddenly appearing from behind.</p>
-    <div id="animOut"><p class="muted">No storyboard yet.</p></div>
-    <div class="row"><button class="btn" onclick="copyAllPrompts()">📋 Copy all video prompts</button></div>
+  <div class="anim-layout">
+    <div class="card anim-scenes-card"><h3>Scenes — continuity lock</h3>
+      <p class="muted small">Tap a scene to see its entry, positions and video prompt. Each scene starts where the previous one ended.</p>
+      <div id="animOut"><p class="muted">No storyboard yet.</p></div>
+      <p id="animImgStatus" class="muted small"></p>
+      <div class="row"><button class="btn" onclick="copyAllPrompts()">📋 Copy all video prompts</button></div>
+    </div>
+    <div class="anim-right">
+      <div class="card anim-render-card"><h3>Built-in video renderer (no key needed)</h3>
+        <p class="muted small">Canvas render with slow zoom, captions and narration.</p>
+        <div class="row"><label class="anim-format">Download format <select id="dlFormat"><option value="webm" selected>WebM (works in every browser)</option><option value="mp4">MP4 (Safari records MP4; Chrome records WebM — see note)</option></select></label><button class="btn primary" id="renderBtn" onclick="renderVideo()">▶ Render video in browser</button><button class="btn" id="renderCancel" style="display:none" onclick="cancelVideoRender()">✕ Cancel</button><span id="renderStatus" class="muted"></span></div>
+        <div class="progress-wrap"><div class="progress-bar" id="renderProgress"></div></div>
+        <p class="muted small anim-tip">Tip: click Render once — the preview below plays live while it records. A 15s test is fastest; 1 min takes a full minute. Keep this tab open until it says Done.</p>
+        <div id="renderPreview"></div>
+        <div class="row"><button class="btn" id="previewPlayBtn" style="display:none" onclick="togglePreview()">▶ Play preview</button><button class="btn" id="previewDownloadBtn" style="display:none" onclick="downloadSceneImages()">⬇ Download scene pictures</button></div>
+        <p id="renderError" class="error-text"></p>
+        <div class="anim-video-row"><video id="animVideo" controls style="display:none"></video><div class="anim-video-side"><div class="row"><a class="btn primary" id="downloadVideoBtn" style="display:none" href="#">⬇ Download video (.webm)</a></div><p class="muted small" id="dlFormatNote"></p></div></div>
+        <p class="muted small">No MP3: this video has no audio track, so an MP3 would be silence.</p>
+        <p class="muted small" id="renderNote"></p>
+      </div>
+      <details class="card anim-providers-card"><summary>External video providers</summary><p class="muted small">Configure in Settings → Providers. Runway, Pika, Luma, Kling, Veo — a saved key shows “Key saved — not verified” until Test Connection passes. Copy-ready prompts above are made for pasting into any of them.</p></details>
+    </div>
   </div>
-  <div class="card"><h3>Built-in video renderer (no key needed)</h3>
-    <p class="muted small">Renders your storyboard scenes on a canvas with slow zoom / gentle pan, captions and narration text, and records it with MediaRecorder. The file downloads from this browser. Each scene shows its own illustration — the picture generated from that scene's narration and your Character Bible — so the video looks like the story you gave it. This is a Ken-Burns-style render of your generated illustrations — it is not an external AI video model.</p>
-    <div class="row"><button class="btn primary" id="renderBtn" onclick="renderVideo()">▶ Render video in browser</button><button class="btn" id="renderCancel" style="display:none" onclick="cancelVideoRender()">✕ Cancel</button><span id="renderStatus" class="muted"></span></div>
-    <div class="progress-wrap"><div class="progress-bar" id="renderProgress"></div></div>
-    <p class="muted small">Tip: click Render once — the preview below plays live while it records. A 15s test is fastest; 1 min takes a full minute. Keep this tab open until it says Done.</p>
-    <div id="renderPreview"></div>
-    <p id="renderError" class="error-text"></p>
-    <video id="animVideo" controls style="width:100%;max-width:480px;display:none"></video>
-    <div class="row"><a class="btn primary" id="downloadVideoBtn" style="display:none" href="#">⬇ Download video (.webm)</a></div>
-    <p class="muted small" id="renderNote"></p>
-  </div>
-  <div class="card"><h3>External video providers</h3><p class="muted small">Configure in Settings → Providers. Runway, Pika, Luma, Kling, Veo — a saved key shows “Key saved — not verified” until Test Connection passes. Copy-ready prompts above are made for pasting into any of them.</p></div>
 </section>
 
 <!-- MUSIC -->
 <section class="page" id="page-music">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>🎵 Kids Music Video Creator</h1>
   <div class="card"><h3>Original song</h3>
     <div class="form-grid">
@@ -280,6 +298,7 @@
 
 <!-- COMIC -->
 <section class="page" id="page-comic">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>💬 Graphic Novel / Comic Creator</h1>
   <div class="card"><h3>Comic story</h3>
     <input id="coIdea" value="Bolt and Pip build a kite that flies to the clouds">
@@ -287,12 +306,14 @@
     <label>Layout <select id="coLayout"><option>2 columns</option><option>3 columns</option><option>1 column (strip)</option></select></label>
     <button class="btn primary" onclick="generateComic()">✨ Generate comic</button></div>
     <div id="comicOut"></div>
+    <p id="comicImgStatus" class="muted small"></p>
     <div class="row"><button class="btn" onclick="exportPDF('comic')">⬇ Download comic as PDF (print)</button></div>
   </div>
 </section>
 
 <!-- LIBRARY -->
 <section class="page" id="page-library">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>📖 Storybook Library</h1>
   <p class="muted">Books shared from My Projects appear here. Click a book to read it.</p>
   <div id="libraryOut" class="grid3"></div>
@@ -302,6 +323,7 @@
 
 <!-- PROJECTS -->
 <section class="page" id="page-projects">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>🗂 My Projects</h1>
   <div class="row"><button class="btn primary" onclick="go('story')">+ New story</button><button class="btn primary" onclick="go('book')">+ New picture book</button><button class="btn" onclick="go('animation')">+ New animation</button><button class="btn" onclick="go('music')">+ New song</button><button class="btn" onclick="go('comic')">+ New comic</button></div>
   <div id="projectsOut" class="grid3"></div>
@@ -309,6 +331,7 @@
 
 <!-- DASHBOARD -->
 <section class="page" id="page-dashboard">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>📊 Dashboard</h1>
   <div class="grid3" id="dashStats"></div>
   <h2>Recent creations</h2><div id="dashRecent" class="grid3"></div>
@@ -317,6 +340,7 @@
 
 <!-- SETTINGS -->
 <section class="page" id="page-settings">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>⚙️ Settings</h1>
   <div class="card"><h3>Generation limits</h3><p><strong>Generation limits: None.</strong> Unlimited, private, owner-only generation. No daily caps, no token counting. If this site ever goes public to new users, revisit limits then — do not re-add them on your own for private use.</p>
   <p class="muted small">Honest note: external providers still have their own credits/billing if you connect one. Unlimited here applies to the built-in engine and built-in renderer.</p></div>
@@ -330,6 +354,7 @@
 
 <!-- ADMIN -->
 <section class="page" id="page-admin">
+  <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>🛡 Admin Dashboard</h1>
   <p class="muted">Google sign-in is required. Each signed-in user works in their own browser (localStorage); this standalone build has no shared server account store. Admin controls apply to this browser only.</p>
   <div class="grid3" id="adminStats"></div>
@@ -355,7 +380,7 @@
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="auth.js?v=12"></script>
-<script src="app.js?v=12"></script>
+<script src="auth.js?v=14"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>
