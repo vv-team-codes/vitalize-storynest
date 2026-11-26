@@ -21,7 +21,7 @@
 @keyframes flicker{0%,100%{opacity:.85}25%{opacity:.6}50%{opacity:1}75%{opacity:.7}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes ctaPulse{0%,100%{box-shadow:0 8px 0 #b67c12,0 14px 30px rgba(11,22,62,.4)}50%{box-shadow:0 8px 0 #b67c12,0 14px 34px rgba(11,22,62,.55);transform:translateY(-2px)}}
-.hero-content{position:relative;z-index:3;width:min(760px,52%);margin:11vh 0 0 42%;text-align:center;color:#fff;animation:fadeUp .7s ease both}
+.hero-content{position:relative;z-index:3;width:min(760px,52%);margin:max(11vh,124px) 0 0 42%;text-align:center;color:#fff;animation:fadeUp .7s ease both}
 .hero-content h1{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:500;font-size:clamp(42px,5.3vw,78px);line-height:1.02;letter-spacing:-2px;margin:0 0 14px;text-shadow:0 4px 20px rgba(9,26,71,.65)}
 .hero-content h1 em{font-family:Georgia,serif;font-weight:500}
 .scribble{color:#ffd52e;font-size:52px;line-height:.5;margin-bottom:20px;text-shadow:0 2px 10px #f7bd25}
@@ -42,7 +42,7 @@
 .hc-icon{font-size:43px;line-height:1.1;margin-bottom:8px;filter:drop-shadow(0 4px 3px rgba(108,59,155,.27))}
 @media(max-width:900px){
   .welcome-hero{background-position:38% center}
-  .hero-content{width:90%;margin:9vh auto 0}
+  .hero-content{width:90%;margin:max(9vh,124px) auto 0}
   .hero-content h1{font-size:clamp(38px,8vw,64px)}
   .hero-cards{width:94%;gap:7px;padding:8px;border-radius:22px}
   .hero-card{min-height:118px;padding:10px 5px;border-radius:16px}
@@ -105,7 +105,7 @@
   /* Full-screen cinematic background */
   .welcome-hero{width:100%;background-size:cover;background-position:42% center;background-repeat:no-repeat;overflow:hidden;display:flex;flex-direction:column}
   /* Hero text: centered, readable, and not overlapping the header */
-  .hero-content{width:min(100% - 34px,560px);margin:clamp(28px,7vh,58px) auto 0;text-align:center;z-index:2}
+  .hero-content{width:min(100% - 34px,560px);margin:max(112px,7vh) auto 0;text-align:center;z-index:2}
   .hero-content h1{margin:0 0 18px;font-size:clamp(37px,10vw,54px);line-height:1.04;letter-spacing:-1.5px;overflow-wrap:anywhere}
   .scribble{display:none}
   .hero-content p{width:100%;max-width:430px;margin:0 auto 24px;font-size:clamp(15px,4.2vw,19px);line-height:1.5}
@@ -120,12 +120,23 @@
 }
 /* Small phones */
 @media screen and (max-width:380px){
-  .hero-content{width:calc(100% - 26px);margin-top:24px}
+  .hero-content{width:calc(100% - 26px);margin-top:112px}
   .hero-content h1{font-size:clamp(34px,9.6vw,42px)}
   .hero-cards{width:calc(100% - 20px);gap:7px;padding:8px}
   .hero-card{min-height:102px}
 }
 
+/* ---- v19: headline must always clear the header — no overlap.
+   The hero-content top margin was purely viewport-relative (11vh desktop,
+   9vh at <=900px, clamp(28px,7vh,58px) mobile, 24px at <=380px), so on a
+   SHORT viewport it shrank below the header height (~80px desktop,
+   ~72px mobile) and the headline slid under the topbar — seen live at
+   878x444. Now every breakpoint floors the margin above the header
+   (124px desktop, 112px mobile) while keeping the vh behaviour on tall
+   screens. The user also asked the text block a bit lower still, so the
+   floors sit ~24px above the header instead of just clearing it. The
+   hero still fits: content + margin is ~480px, well inside a portrait
+   phone or laptop viewport. */
 /* ---- v17: signed-out welcome hero fits the viewport — no scroller.
    The 940px (<=520px) / 860px (<=430px) fixed min-heights were sized for
    the signed-in hero WITH its 4 cards; signed-out the cards are hidden,
