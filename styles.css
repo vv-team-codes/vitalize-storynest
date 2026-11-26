@@ -131,3 +131,14 @@ body.on-home #bottomnav{display:none!important}
 #userChip img{width:28px;height:28px;border-radius:50%;display:block}
 #userChip span{color:#fff;font-size:13px;font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #userChip button{background:#fff;border:none;color:#0f766e;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer}
+
+/* ---- v6: nav legibility over the hero image ----
+   The landing hero is the user's own design image, so its top-nav words
+   (Home / Picture Book / Animation / ...) are baked into the picture and
+   a letter can vanish against tree foliage. A dark gradient shade behind
+   the top strip of the hero lifts the baked-in white nav text off the
+   foliage; hotspots stay above the shade and clickable. The real HTML
+   nav buttons (shown off-home) also get a darker pill + text shadow. */
+.landing-hero::before{content:"";position:absolute;left:0;right:0;top:0;height:12%;background:linear-gradient(rgba(8,20,32,.62),rgba(8,20,32,0));pointer-events:none;z-index:0}
+.landing-hero .hotspot{z-index:1}
+#nav button:not(.active){background:rgba(15,118,110,.45);text-shadow:0 1px 3px rgba(0,0,0,.55)}

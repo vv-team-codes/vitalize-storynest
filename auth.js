@@ -1,4 +1,4 @@
-/* Vitalize StoryNest — Google sign-in (Firebase Auth), v5.
+/* Vitalize StoryNest — Google sign-in (Firebase Auth), v6.
    REVISED trigger (26 Nov 2026): the landing page is fully visible on load —
    no blocking gate. Google sign-in opens on ANY button/link tap while signed
    out. After sign-in every button works normally, and the tap's destination
