@@ -72,6 +72,48 @@ function addPage(){if(!current)return alert('Generate a book first.');current.pa
 function deletePage(i){if(!current||current.pages.length<=1)return;current.pages.splice(i,1);current.pages.forEach((p,j)=>p.n=j+1);save();renderBookOut();renderEditor();}
 function saveCurrentBook(){if(!current)return alert('Generate a book first.');const ex=state.projects.findIndex(p=>p.id===current.id);if(ex>=0)state.projects[ex]=current;else state.projects.unshift(current);logHistory('save','Saved "'+current.title+'"');save();renderProjects();alert('Saved to My Projects.');}
 
+/* ---------- Story (text-only tale — its own flow, NOT the Picture Book) ----------
+   Chapters of prose, no illustrations, no pages. A Story project has
+   kind:'story' and chapters:[{n, heading, text}]; the Picture Book flow
+   (kind:'book', pages with illustrations) is a different object. */
+let currentStory=null;
+function suggestStoryIdeas(){const el=document.getElementById('stIdeaList');el.innerHTML=IDEAS.map(i=>'<button class="chip" onclick="pickStoryIdea(this)">'+esc(i)+'</button>').join('');}
+function pickStoryIdea(b){document.getElementById('stIdea').value=b.textContent;}
+function randomStoryIdea(){document.getElementById('stIdea').value=IDEAS[Math.floor(Math.random()*IDEAS.length)];}
+function generateStory(){
+  const idea=document.getElementById('stIdea').value.trim()||IDEAS[0];
+  const age=document.getElementById('stAge').value, type=document.getElementById('stType').value, lang=document.getElementById('stLang').value;
+  const n=Math.max(3,Math.min(6,parseInt(document.getElementById('stChapters').value)||5));
+  const hero=document.getElementById('stHero').value.trim()||'Luna';
+  const beats=TYPES[type]||TYPES.Adventure;
+  const title=hero+' and the '+beats[1].replace(/^a /,'').replace(/^an /,'').split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+  const desc='A '+type.toLowerCase()+' text story for ages '+age+' about '+hero+', who discovers '+beats[0]+' and learns that '+MORALS[type].toLowerCase();
+  const headings=['The Beginning','A Surprise on the Way','A Brave Choice','The Kindest Moment','The Way Home','A Story to Remember'];
+  const chapters=[];
+  for(let i=0;i<n;i++){
+    const beat=beats[i%beats.length];
+    let text;
+    if(i===0) text='One bright morning, '+hero+' woke up with a big idea. Today would be the day to try '+beats[0]+'. The sun was warm, the birds were singing, and the whole world felt full of promise. '+hero+' packed a little bag, waved goodbye, and set off down the path with a brave, happy heart.';
+    else if(i===n-1) text='At last, '+hero+' came home as the stars began to twinkle. Everything had worked out, and the lesson stayed warm in '+hero+'\'s heart: '+MORALS[type]+' From that day on, whenever someone asked about the journey, '+hero+' smiled and told the story all over again.';
+    else text=hero+' came to '+beats[1]+' and faced '+beats[2]+'. It was not easy, and for a moment '+hero+' wanted to turn back. But with a brave heart and a kind friend beside them, '+hero+' kept going, step by step, until the way forward was clear again.';
+    if(lang==='ta') text=hero+' '+beats[0]+' கற்றுக்கொண்டார். '+text;
+    chapters.push({n:i+1,heading:headings[i]||('Chapter '+(i+1)),text});
+  }
+  currentStory={id:uid(),kind:'story',title,desc,moral:MORALS[type],age,type,lang,hero,chapters,created:new Date().toISOString(),shared:false};
+  logHistory('story','Generated text story "'+title+'" ('+n+' chapters, '+type+', '+lang+')');
+  save(); renderStoryOut();
+}
+function renderStoryOut(){
+  const out=document.getElementById('storyOut'); if(!out)return;
+  if(!currentStory){out.innerHTML='<p class="muted">No story generated yet.</p>';return;}
+  out.innerHTML='<h3>'+esc(currentStory.title)+'</h3><p>'+esc(currentStory.desc)+'</p><p><strong>Moral:</strong> '+esc(currentStory.moral)+'</p>'+
+    currentStory.chapters.map(c=>'<div class="book-page"><strong>Chapter '+c.n+' — '+esc(c.heading)+'</strong><p style="font-size:17px;line-height:1.7">'+esc(c.text)+'</p></div>').join('');
+}
+function openStory(id){const b=state.projects.find(p=>p.id===id);if(!b||b.kind!=='story')return;currentStory=b;renderStoryOut();go('story');}
+function saveCurrentStory(){if(!currentStory)return alert('Generate a story first.');const ex=state.projects.findIndex(p=>p.id===currentStory.id);if(ex>=0)state.projects[ex]=currentStory;else state.projects.unshift(currentStory);logHistory('save','Saved story "'+currentStory.title+'"');save();renderProjects();renderSimpleHome();alert('Saved to My Projects.');}
+function readStoryAloud(){if(!currentStory)return alert('Generate a story first.');const u=new SpeechSynthesisUtterance(currentStory.title+'. '+currentStory.chapters.map(c=>'Chapter '+c.n+'. '+c.text).join(' '));u.rate=1;speechSynthesis.cancel();speechSynthesis.speak(u);}
+function downloadStoryFile(){if(!currentStory)return alert('Generate a story first.');const txt=currentStory.title+'\n'+currentStory.desc+'\nMoral: '+currentStory.moral+'\n\n'+currentStory.chapters.map(c=>'Chapter '+c.n+' — '+c.heading+'\n'+c.text).join('\n\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download=currentStory.title.replace(/\W+/g,'-')+'.txt';a.click();}
+
 /* ---------- Characters ---------- */
 function saveCharacter(){const c={id:uid(),name:document.getElementById('chName').value,kind:document.getElementById('chKind').value,face:document.getElementById('chFace').value,hair:document.getElementById('chHair').value,outfit:document.getElementById('chOutfit').value,colors:document.getElementById('chColors').value,acc:document.getElementById('chAcc').value,expr:document.getElementById('chExpr').value};const ex=state.characters.findIndex(x=>x.name===c.name);if(ex>=0)state.characters[ex]=c;else state.characters.unshift(c);logHistory('character','Saved character '+c.name);save();renderChars();applyBible();}
 function renderChars(){const el=document.getElementById('charList');if(el)el.innerHTML=state.characters.map(c=>'<span class="chip">'+esc(c.name)+' · '+esc(c.kind)+'</span>').join('')||'<span class="muted small">No saved characters yet.</span>';}
@@ -120,8 +162,8 @@ function renderHome(){const el=document.getElementById('homeStats');if(el)el.inn
   const s=document.getElementById('homeSamples');if(s)s.innerHTML=state.projects.slice(0,3).map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||'')+'</p><button class="btn" onclick="openReader(\''+b.id+'\')">📖 Read</button></div>').join('')||'<p class="muted">No samples yet.</p>';
 }
 function renderSimpleHome(){const el=document.getElementById('simpleProjects');if(!el)return;el.innerHTML=state.projects.length?state.projects.map(b=>'<div class="simple-row"><div><strong>'+esc(b.title)+'</strong><br><span class="muted small">'+esc(b.desc||b.kind||'')+'</span></div><button class="btn" onclick="openProject(\''+b.id+'\')">Open</button></div>').join(''):'<p class="muted">No stories yet — tap \u201cCreate a story\u201d above to make your first one.</p>';}
-function renderProjects(){const el=document.getElementById('projectsOut');if(!el)return;el.innerHTML=state.projects.length?state.projects.map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||b.kind||'')+'</p><p class="muted small">'+(b.pages?b.pages.length+' pages · ':'')+esc(b.type||b.kind||'')+'</p><div class="row"><button class="btn" onclick="openProject(\''+b.id+'\')">Open</button><button class="btn" onclick="duplicateProject(\''+b.id+'\')">Duplicate</button><button class="btn danger" onclick="deleteProject(\''+b.id+'\')">Delete</button></div></div>').join(''):'<p class="muted">No projects yet — create one.</p>';}
-function openProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;if(b.kind==='book'||b.pages){current=b;renderBookOut();renderEditor();go('book');}else if(b.kind==='comic'){go('comic');}else{go('projects');}}
+function renderProjects(){const el=document.getElementById('projectsOut');if(!el)return;el.innerHTML=state.projects.length?state.projects.map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||b.kind||'')+'</p><p class="muted small">'+(b.pages?b.pages.length+' pages · ':(b.chapters?b.chapters.length+' chapters · ':''))+esc(b.type||b.kind||'')+'</p><div class="row"><button class="btn" onclick="openProject(\''+b.id+'\')">Open</button><button class="btn" onclick="duplicateProject(\''+b.id+'\')">Duplicate</button><button class="btn danger" onclick="deleteProject(\''+b.id+'\')">Delete</button></div></div>').join(''):'<p class="muted">No projects yet — create one.</p>';}
+function openProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;if(b.kind==='story'){openStory(id);}else if(b.kind==='book'||b.pages){current=b;renderBookOut();renderEditor();go('book');}else if(b.kind==='comic'){go('comic');}else{go('projects');}}
 function duplicateProject(id){const b=state.projects.find(p=>p.id===id);if(!b)return;const c=JSON.parse(JSON.stringify(b));c.id=uid();c.title=b.title+' (copy)';state.projects.unshift(c);save();renderProjects();}
 function deleteProject(id){if(!confirm('Delete this project?'))return;state.projects=state.projects.filter(p=>p.id!==id);state.library=state.library.filter(p=>p.id!==id);save();renderProjects();renderLibrary();renderSimpleHome();}
 function renderDashboard(){const el=document.getElementById('dashStats');if(el)el.innerHTML='<div class="card"><h3>'+state.projects.length+'</h3><p>Total projects</p></div><div class="card"><h3>'+state.projects.filter(p=>p.pages&&p.pages.every(x=>x.img)).length+'</h3><p>Completed / fully illustrated</p></div><div class="card"><h3>'+state.characters.length+'</h3><p>Saved characters</p></div><div class="card"><h3>Unlimited</h3><p>Daily limit: none</p></div>';

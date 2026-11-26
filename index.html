@@ -11,10 +11,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="StoryNest">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="hero.css?v=8">
-<link rel="stylesheet" href="hero-bg.css?v=8">
+<link rel="stylesheet" href="hero.css?v=9">
+<link rel="stylesheet" href="hero-bg.css?v=9">
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body class="on-home">
@@ -63,6 +63,7 @@
       <div class="scribble" aria-hidden="true">━━━━━━━━━━━━</div>
       <p>Create, animate and share unique stories<br>for children with the power of AI.</p>
       <button class="hero-cta" type="button" onclick="go('book')">Create Your Story <span aria-hidden="true">&rarr;</span></button>
+      <button class="hero-cta secondary" type="button" onclick="go('projects')">Explore Projects</button>
     </div>
     <div class="hero-cards">
       <button class="hero-card" type="button" onclick="go('book')"><span class="hc-icon" aria-hidden="true">📖</span><strong>Picture Book</strong><span>Create illustrated story books</span></button>
@@ -73,11 +74,12 @@
   </div>
 
   <div id="simpleHome">
-    <h2>Welcome back — let's make a story</h2>
-    <p class="muted">Just 3 easy steps. No confusing menus.</p>
-    <button class="big-cta" type="button" onclick="go('book')">1 · Create a story →</button>
+    <h2>Welcome back — what will you create today?</h2>
+    <p class="muted">Pick one — it opens that studio.</p>
+    <button class="big-cta" type="button" onclick="go('story')">1 · Create a story →</button>
     <h3>2 · Pick what to make</h3>
     <div class="simple-choices">
+      <button type="button" onclick="go('story')"><span class="sc-icon" aria-hidden="true">✦</span><strong>Story</strong><span>A text-only tale with chapters</span></button>
       <button type="button" onclick="go('book')"><span class="sc-icon" aria-hidden="true">📚</span><strong>Picture Book</strong><span>A story book with pictures</span></button>
       <button type="button" onclick="go('animation')"><span class="sc-icon" aria-hidden="true">🎬</span><strong>Animation</strong><span>A moving video story</span></button>
       <button type="button" onclick="go('music')"><span class="sc-icon" aria-hidden="true">🎵</span><strong>Music Video</strong><span>A song with pictures</span></button>
@@ -187,6 +189,39 @@
   </div>
 </section>
 
+<!-- STORY (text-only tale — its own flow, NOT the Picture Book) -->
+<section class="page" id="page-story">
+  <h1>✦ Tell it as a Story</h1>
+  <p class="muted">A text-only tale in chapters — no pictures, no pages to illustrate. Just the story, told well. Everything saves automatically to My Projects.</p>
+  <div class="card"><h3>Step 1 — Story idea</h3>
+    <textarea id="stIdea" rows="3" placeholder="e.g. Luna the Moon Rabbit finds a glowing lantern and learns to share its light"></textarea>
+    <div class="row">
+      <button class="btn" onclick="suggestStoryIdeas()">💡 Suggested ideas</button>
+      <button class="btn" onclick="randomStoryIdea()">🎲 Random idea</button>
+    </div>
+    <div id="stIdeaList" class="chips"></div>
+  </div>
+  <div class="card"><h3>Step 2 — Settings</h3>
+    <div class="form-grid">
+      <label>Age group <select id="stAge"><option>0–3</option><option>4–6</option><option selected>5–7</option><option>7–9</option><option>9–12</option></select></label>
+      <label>Story type <select id="stType"><option>Fairy Tale</option><option selected>Adventure</option><option>Bedtime</option><option>Educational</option><option>Fantasy</option><option>Funny</option><option>Moral Story</option><option>Friendship</option><option>Family</option><option>Animals</option></select></label>
+      <label>Language <select id="stLang"><option value="en" selected>English</option><option value="ta">Tamil</option><option value="hi">Hindi</option></select></label>
+      <label>Chapters <input type="number" id="stChapters" min="3" max="6" value="5"> <span class="muted small">3–6</span></label>
+      <label>Main character name <input id="stHero" value="Luna"></label>
+    </div>
+    <button class="btn primary" onclick="generateStory()">✨ Generate story</button>
+    <span class="muted small">Built-in story engine — no external key needed. Unlimited.</span>
+  </div>
+  <div class="card"><h3>Your story</h3>
+    <div id="storyOut"><p class="muted">No story generated yet in this session. Generate one above, or open a saved story from My Projects.</p></div>
+    <div class="row">
+      <button class="btn" onclick="saveCurrentStory()">💾 Save story</button>
+      <button class="btn" onclick="readStoryAloud()">🔊 Read aloud</button>
+      <button class="btn" onclick="downloadStoryFile()">⬇ Download story (.txt)</button>
+    </div>
+  </div>
+</section>
+
 <!-- ANIMATION -->
 <section class="page" id="page-animation">
   <h1>🎬 AI Animation Studio</h1>
@@ -264,7 +299,7 @@
 <!-- PROJECTS -->
 <section class="page" id="page-projects">
   <h1>🗂 My Projects</h1>
-  <div class="row"><button class="btn primary" onclick="go('book')">+ New picture book</button><button class="btn" onclick="go('animation')">+ New animation</button><button class="btn" onclick="go('music')">+ New song</button><button class="btn" onclick="go('comic')">+ New comic</button></div>
+  <div class="row"><button class="btn primary" onclick="go('story')">+ New story</button><button class="btn primary" onclick="go('book')">+ New picture book</button><button class="btn" onclick="go('animation')">+ New animation</button><button class="btn" onclick="go('music')">+ New song</button><button class="btn" onclick="go('comic')">+ New comic</button></div>
   <div id="projectsOut" class="grid3"></div>
 </section>
 
@@ -309,14 +344,14 @@
 </nav>
 <footer><p>Vitalize StoryNest — original content only. Built-in engine, unlimited private use. <a href="https://github.com/vv-team-codes/vitalize-storynest">GitHub: vv-team-codes/vitalize-storynest</a></p></footer>
 <script>
-/* v8: ask the service worker for an update on every load. If a new worker
+/* v9: ask the service worker for an update on every load. If a new worker
    takes control, reload once per session so a stale cached gate can never
    stick on first load. (First-ever visit: no old worker, no reload.) */
 (function(){if(!('serviceWorker' in navigator))return;try{navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update();});navigator.serviceWorker.addEventListener('controllerchange',function(){if(sessionStorage.getItem('vsn-sw-reload'))return;try{sessionStorage.setItem('vsn-sw-reload','1');}catch(e){}location.reload();});}catch(e){}})();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="auth.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="auth.js?v=9"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

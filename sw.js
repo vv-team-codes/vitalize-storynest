@@ -1,13 +1,8 @@
-/* Vitalize StoryNest service worker — offline app shell (v8).
-   v7 fix: the v4 worker cached ?v=4 assets and served them cache-first
-   with ignoreSearch, so auth.js?v=5 still returned the OLD full-screen
-   gate code (and hero.css was never cached at all). This worker is
-   network-first for same-origin GETs — a first load always gets the live
-   files — and only falls back to the cache when the network fails.
-   It activates immediately (skipWaiting + clients.claim) and deletes
-   every older cache on activation. */
-const CACHE = 'vsn-shell-v8';
-const ASSETS = ['./', './index.html', './styles.css?v=8', './hero.css?v=8', './hero-bg.css?v=8', './app.js?v=8', './auth.js?v=8', './manifest.json', './icon.svg'];
+/* Vitalize StoryNest service worker — offline app shell (v9).
+   v9: same network-first worker as v8, cache name + asset versions
+   bumped so a stale v8 shell can never be served again. */
+const CACHE = 'vsn-shell-v9';
+const ASSETS = ['./', './index.html', './styles.css?v=9', './hero.css?v=9', './hero-bg.css?v=9', './app.js?v=9', './auth.js?v=9', './manifest.json', './icon.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });

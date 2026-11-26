@@ -51,6 +51,18 @@ The hosted Muse artifact uses the same model with server storage; this standalon
 - `app.js` — story engine, Character Bible, SVG illustration generator, editor, reader, storyboard + built-in video renderer, music/comic generators, providers, localStorage persistence
 - `README.md` — this file
 
+## v9 — Welcome ends at the hero CTAs (26 Nov 2026)
+Signed out, the site shows ONLY the welcome hero: top nav, headline
+"Build Magical Stories for Curious Minds", subheading, and the two buttons
+Create Your Story + Explore Projects. The 4 hero format cards, the simple
+home, footer and bottom nav are all hidden until Google sign-in (any tap
+while signed out still opens Google sign-in; no on-load gate). After
+sign-in the home shows the creation choices first — Story, Picture Book,
+Animation, Music Video, Comic. Story is its own text-only flow (chapters
+of prose, no illustrations), separate from the Picture Book. Asset
+versions and the service-worker cache bumped to v9 so the live site does
+not serve a stale cached build.
+
 ## v8 — Welcome-first (26 Nov 2026)
 Opening the site shows ONLY the welcome page: the user's own design-3 hero
 image (optimised JPEG, 351 KB, in `hero-bg.css` — the GitHub connector only

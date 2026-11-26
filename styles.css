@@ -144,14 +144,16 @@ body.on-home main{padding-top:0}
 .landing-hero .hotspot{z-index:1}
 #nav button:not(.active){background:rgba(15,118,110,.45);text-shadow:0 1px 3px rgba(0,0,0,.55)}
 
-/* ---- v8: welcome-only while signed out; simple signed-in home ----
-   Signed out, the visitor sees ONLY the welcome hero (nav, headline,
-   CTA, 4 cards). Stats, How-it-works, samples, bottom nav, footer and
-   the project/character pills are hidden until Google sign-in. After
-   sign-in the top bar is simplified to Home + your account, and the
-   simple 1-2-3 flow on Home is the way in. */
+/* ---- v9: welcome-only while signed out; creation choices after sign-in ----
+   Signed out, the visitor sees ONLY the welcome hero (top nav, headline,
+   subheading, Create Your Story + Explore Projects). The 4 hero format
+   cards, the simple home, stats, bottom nav and footer are all hidden
+   until Google sign-in. After sign-in the simple home on Home is the way
+   in: creation choices first — Story, Picture Book, Animation, Music
+   Video, Comic — each opening its own studio. */
 #simpleHome{display:none;max-width:1080px;margin:0 auto;padding:30px 22px 10px}
 body.signed-in #simpleHome{display:block}
+body:not(.signed-in) .hero-cards{display:none!important}
 body:not(.signed-in) #bottomnav{display:none!important}
 body:not(.signed-in) footer{display:none}
 body:not(.signed-in) #countPill,body:not(.signed-in) #limitPill,body:not(.signed-in) #moreBtn,body:not(.signed-in) #installBtn,body:not(.signed-in) #moreMenu{display:none!important}
