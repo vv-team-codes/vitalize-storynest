@@ -1750,4 +1750,9 @@ function clearAllData(){if(!confirm('Delete ALL local ekiddy.com data in this br
 
 /* ---------- Init ---------- */
 renderCounts();renderChars();renderHome();renderSimpleHome();renderLibrary();renderProjects();renderDashboard();renderAdmin();renderProviders();hydrateAll();
+/* v29: keep the Scenes box in sync with the 1-Minute Film checkbox
+   from the moment the page loads — it used to show 4 until generation
+   started, even though the film is always 6 scenes while checked. */
+function syncQvScenes(){var c=document.getElementById('qvOneMin'),s=document.getElementById('qvScenes');if(c&&s&&c.checked)s.value='6';}
+(function(){var c=document.getElementById('qvOneMin');if(c)c.addEventListener('change',syncQvScenes);syncQvScenes();})();
 if(state.theme==='dark')document.body.className='dark';
