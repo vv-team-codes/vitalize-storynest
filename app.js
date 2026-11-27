@@ -205,12 +205,9 @@ function randomIdea(){document.getElementById('bkIdea').value=IDEAS[Math.floor(M
 function uploadManuscript(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{document.getElementById('bkManuscript').value=r.result;};r.readAsText(f);}
 function useManuscript(){const m=document.getElementById('bkManuscript').value.trim();if(m)document.getElementById('bkIdea').value=m.slice(0,140);}
 function bibleText(c){c=c||state.characters[0]||{name:document.getElementById('chName').value,kind:document.getElementById('chKind').value,face:document.getElementById('chFace').value,hair:document.getElementById('chHair').value,outfit:document.getElementById('chOutfit').value,colors:document.getElementById('chColors').value,acc:document.getElementById('chAcc').value,expr:document.getElementById('chExpr').value};return c.name+' — '+c.kind+'; face: '+c.face+'; hair/fur: '+c.hair+'; outfit: '+c.outfit+'; colours: '+c.colors+'; accessories: '+c.acc+'; expression: '+c.expr+'. SAME character in every scene — do not change face, hair, outfit or colours.';}
-function generateBook(){
-  const idea=document.getElementById('bkIdea').value.trim()||IDEAS[0];
-  const manuscript=document.getElementById('bkManuscript').value.trim();
-  const age=document.getElementById('bkAge').value, type=document.getElementById('bkType').value, lang=document.getElementById('bkLang').value;
-  const n=Math.max(4,Math.min(12,parseInt(document.getElementById('bkPages').value)||6));
-  const style=document.getElementById('bkStyle').value, hero=document.getElementById('bkHero').value.trim()||'Luna';
+/* v33: the built-in story engine, kept exactly as it was — it is the
+   silent fallback when the story service cannot be reached. */
+function generateBookLocal(idea,manuscript,age,type,lang,n,style,hero){
   const beats=TYPES[type]||TYPES.Adventure;
   const title=hero+' and the '+beats[1].replace(/^a /,'').replace(/^an /,'').split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
   const desc='A '+type.toLowerCase()+' picture book for ages '+age+' about '+hero+', who discovers '+beats[0]+' and learns that '+MORALS[type].toLowerCase();
@@ -226,8 +223,26 @@ function generateBook(){
     pages.push({n:i+1,text,scene:hero+' in a '+(type==='Bedtime'?'moonlit meadow':'sunny meadow')+', '+beats[i%beats.length]+', soft light, gentle colours',prompt:'',img:''});
   }
   if(manuscript){pages[0].text=manuscript.slice(0,280);}
-  current={id:uid(),kind:'book',title,desc,moral:MORALS[type],age,type,lang,pages,style,hero,characters:[bibleText()],created:new Date().toISOString(),shared:false};
-  logHistory('story','Generated "'+title+'" ('+n+' pages, '+type+', '+lang+')');
+  return {id:uid(),kind:'book',title:title,desc:desc,moral:MORALS[type],age:age,type:type,lang:lang,pages:pages,style:style,hero:hero,characters:[bibleText()],created:new Date().toISOString(),shared:false};
+}
+async function generateBook(){
+  const idea=document.getElementById('bkIdea').value.trim()||IDEAS[0];
+  const manuscript=document.getElementById('bkManuscript').value.trim();
+  const age=document.getElementById('bkAge').value, type=document.getElementById('bkType').value, lang=document.getElementById('bkLang').value;
+  const n=Math.max(4,Math.min(12,parseInt(document.getElementById('bkPages').value)||6));
+  const style=document.getElementById('bkStyle').value, hero=document.getElementById('bkHero').value.trim()||'Luna';
+  const statusEl=document.getElementById('bookStatus');
+  if(statusEl)statusEl.textContent='Writing your story…';
+  let book=null, fromService=false;
+  try{
+    const s=await fetchStoryFromService({idea:manuscript?manuscript.slice(0,500):idea,hero:hero,type:type,age:age,lang:lang,pages:n,style:style,bible:bibleText()});
+    book={id:uid(),kind:'book',title:s.title,desc:s.description,moral:s.moral,age:age,type:type,lang:lang,pages:s.pages,style:style,hero:hero,characters:s.characters,created:new Date().toISOString(),shared:false};
+    if(manuscript){book.pages[0].text=manuscript.slice(0,280);}
+    fromService=true;
+  }catch(e){book=null;}
+  if(!book){book=generateBookLocal(idea,manuscript,age,type,lang,n,style,hero);}
+  current=book;
+  logHistory('story','Generated "'+current.title+'" ('+current.pages.length+' pages, '+type+', '+lang+')');
   save();
   /* v13: pictures appear WITH the book, instantly — every page gets
      its built-in illustration right here, so the book never looks
@@ -236,7 +251,12 @@ function generateBook(){
      background, one at a time with progress. Step 5 buttons still
      work for re-doing them. */
   current.pages.forEach(function(p){p.img=makeSVG(p,current.style);p.prompt=p.scene+' — '+bibleText()+' — style: '+current.style;});
-  save(); bookPageIdx=0; bookShowAll=false; renderBookOut(); renderEditor(); applyBible();
+  save(); bookPageIdx=0; bookShowAll=false; renderBookOut(); renderEditor();
+  if(fromService){
+    const el=document.getElementById('bibleOut');if(el)el.textContent='CHARACTER BIBLE (locked, used in every prompt):\n'+current.characters.join('\n');
+    const bn=document.getElementById('bibleNote');if(bn)bn.textContent='CHARACTER BIBLE: '+current.characters.join(' | ');
+  }else{applyBible();}
+  if(statusEl)statusEl.textContent='';
   illustrateAll();
   document.querySelectorAll('.step').forEach(s=>s.classList.toggle('on',+s.dataset.s<=3));
 }
@@ -280,11 +300,9 @@ let currentStory=null;
 function suggestStoryIdeas(){const el=document.getElementById('stIdeaList');el.innerHTML=IDEAS.map(i=>'<button class="chip" onclick="pickStoryIdea(this)">'+esc(i)+'</button>').join('');}
 function pickStoryIdea(b){document.getElementById('stIdea').value=b.textContent;}
 function randomStoryIdea(){document.getElementById('stIdea').value=IDEAS[Math.floor(Math.random()*IDEAS.length)];}
-function generateStory(){
-  const idea=document.getElementById('stIdea').value.trim()||IDEAS[0];
-  const age=document.getElementById('stAge').value, type=document.getElementById('stType').value, lang=document.getElementById('stLang').value;
-  const n=Math.max(3,Math.min(6,parseInt(document.getElementById('stChapters').value)||5));
-  const hero=document.getElementById('stHero').value.trim()||'Luna';
+/* v33: the built-in text-story engine, kept exactly as it was — the
+   silent fallback when the story service cannot be reached. */
+function generateStoryLocal(idea,age,type,lang,n,hero){
   const beats=TYPES[type]||TYPES.Adventure;
   const title=hero+' and the '+beats[1].replace(/^a /,'').replace(/^an /,'').split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
   const desc='A '+type.toLowerCase()+' text story for ages '+age+' about '+hero+', who discovers '+beats[0]+' and learns that '+MORALS[type].toLowerCase();
@@ -299,8 +317,25 @@ function generateStory(){
     if(lang==='ta') text=hero+' '+beats[0]+' கற்றுக்கொண்டார். '+text;
     chapters.push({n:i+1,heading:headings[i]||('Chapter '+(i+1)),text});
   }
-  currentStory={id:uid(),kind:'story',title,desc,moral:MORALS[type],age,type,lang,hero,chapters,created:new Date().toISOString(),shared:false};
-  logHistory('story','Generated text story "'+title+'" ('+n+' chapters, '+type+', '+lang+')');
+  return {id:uid(),kind:'story',title:title,desc:desc,moral:MORALS[type],age:age,type:type,lang:lang,hero:hero,chapters:chapters,created:new Date().toISOString(),shared:false};
+}
+async function generateStory(){
+  const idea=document.getElementById('stIdea').value.trim()||IDEAS[0];
+  const age=document.getElementById('stAge').value, type=document.getElementById('stType').value, lang=document.getElementById('stLang').value;
+  const n=Math.max(3,Math.min(6,parseInt(document.getElementById('stChapters').value)||5));
+  const hero=document.getElementById('stHero').value.trim()||'Luna';
+  const statusEl=document.getElementById('storyStatus');
+  if(statusEl)statusEl.textContent='Writing your story…';
+  let story=null;
+  try{
+    const s=await fetchStoryFromService({idea:idea,hero:hero,type:type,age:age,lang:lang,pages:n,style:'Storybook Illustration',bible:bibleText()});
+    const headings=['The Beginning','A Surprise on the Way','A Brave Choice','The Kindest Moment','The Way Home','A Story to Remember'];
+    story={id:uid(),kind:'story',title:s.title,desc:s.description,moral:s.moral,age:age,type:type,lang:lang,hero:hero,chapters:s.pages.map(function(p,i){return {n:i+1,heading:headings[i]||('Chapter '+(i+1)),text:p.text};}),created:new Date().toISOString(),shared:false};
+  }catch(e){story=null;}
+  if(!story){story=generateStoryLocal(idea,age,type,lang,n,hero);}
+  currentStory=story;
+  logHistory('story','Generated text story "'+currentStory.title+'" ('+n+' chapters, '+type+', '+lang+')');
+  if(statusEl)statusEl.textContent='';
   save(); renderStoryOut();
 }
 function renderStoryOut(){
@@ -409,6 +444,44 @@ let nextImageAt=0;
    GitHub Pages (ekiddy.com) AND from the Vercel site itself, and
    the browser still never sees any provider name, model or key. */ 
 const IMAGE_PROXY_URL='https://vitalize-storynest.vercel.app/api/generate-image';
+/* v33: STORY GENERATION — through the site's own story service.
+   Same pattern as pictures: this browser POSTs the story inputs to
+   the site's own endpoint (STORY_PROXY_URL below), which returns a
+   finished picture-book story. The browser NEVER talks to any text
+   provider directly, and NO provider name, model name, API key or
+   account appears anywhere in this file, in the UI, or in any
+   network call the browser can see. Server side lives in
+   api/generate-story.js; the key is a server-side environment
+   variable on Vercel. If the service cannot be reached, is busy,
+   or says the limit is hit, generation falls back SILENTLY to the
+   built-in story engine below — the book/story still appears, just
+   written by the built-in engine. Story generation never breaks
+   because the service is unavailable. */
+const STORY_PROXY_URL='https://vitalize-storynest.vercel.app/api/generate-story';
+function validateStoryData(s,n){
+  if(!s||typeof s!=='object')return null;
+  if(typeof s.title!=='string'||!s.title.trim())return null;
+  if(typeof s.description!=='string'||!s.description.trim())return null;
+  if(typeof s.moral!=='string'||!s.moral.trim())return null;
+  if(!Array.isArray(s.characters)||!s.characters.length||!s.characters.every(function(c){return typeof c==='string'&&c.trim();}))return null;
+  if(!Array.isArray(s.pages)||s.pages.length<3)return null;
+  const pages=[];
+  for(let i=0;i<s.pages.length&&pages.length<n;i++){
+    const p=s.pages[i];
+    if(!p||typeof p.text!=='string'||!p.text.trim()||typeof p.scene!=='string'||!p.scene.trim())continue;
+    pages.push({n:pages.length+1,text:p.text.trim().slice(0,600),scene:p.scene.trim().slice(0,300),prompt:'',img:''});
+  }
+  if(pages.length<3)return null;
+  return {title:s.title.trim().slice(0,120),description:s.description.trim().slice(0,400),moral:s.moral.trim().slice(0,300),characters:s.characters.map(function(c){return c.trim().slice(0,600);}).slice(0,2),pages:pages};
+}
+async function fetchStoryFromService(inputs){
+  const r=await fetchWithTimeout(STORY_PROXY_URL,60000,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(inputs)});
+  if(!r.ok){const e=new Error('Story service HTTP '+r.status);e.status=r.status;throw e;}
+  const j=await r.json();
+  const s=validateStoryData(j&&j.story,inputs.pages);
+  if(!s) throw new Error('Story service: bad story in response');
+  return s;
+}
 async function waitImageSlot(){
   const now=Date.now();
   if(nextImageAt>now) await new Promise(function(res){setTimeout(res,nextImageAt-now);});

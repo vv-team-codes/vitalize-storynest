@@ -151,6 +151,7 @@
       <label>Main character name <input id="bkHero" value="Luna"></label>
     </div>
     <button class="btn primary" onclick="generateBook()">✨ Generate story (Step 3)</button>
+    <p id="bookStatus" class="muted small"></p>
     <span class="muted small">Built-in story engine — no external key needed. Unlimited.</span>
   </div>
 
@@ -225,6 +226,7 @@
       <label>Main character name <input id="stHero" value="Luna"></label>
     </div>
     <button class="btn primary" onclick="generateStory()">✨ Generate story</button>
+    <p id="storyStatus" class="muted small"></p>
     <span class="muted small">Built-in story engine — no external key needed. Unlimited.</span>
   </div>
   <div class="card"><h3>Your story</h3>
@@ -416,6 +418,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="auth.js?v=26"></script>
 <script src="picker-images.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>
