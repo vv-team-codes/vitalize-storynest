@@ -249,7 +249,7 @@ function bookPrev(){if(!current)return;if(bookPageIdx>0){bookPageIdx--;renderBoo
 function bookNext(){if(!current)return;if(bookPageIdx<current.pages.length-1){bookPageIdx++;renderBookOut();}}
 function bookToggleAll(){bookShowAll=!bookShowAll;renderBookOut();}
 function bookPageHTML(p,i,font,bg){
-  return '<div class="book-page" style="font-family:'+esc(font)+';background:'+esc(bg)+'"><strong>Page '+p.n+'</strong>'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p class="book-caption">Scene: '+esc(p.scene)+'</p><p>'+esc(p.text)+'</p><div class="row"><button class="btn" onclick="regenPage('+i+')">↻ Regenerate this page</button><button class="btn" onclick="editPageText('+i+')">✏ Edit text</button></div></div>';
+  return '<div class="book-page" style="font-family:'+esc(font)+';background:'+esc(bg)+'"><strong>Page '+p.n+'</strong>'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p>'+esc(p.text)+'</p><div class="row"><button class="btn" onclick="regenPage('+i+')">↻ Regenerate this page</button><button class="btn" onclick="editPageText('+i+')">✏ Edit text</button></div></div>';
 }
 function renderBookOut(all){
   const out=document.getElementById('bookOut'); if(!current){out.innerHTML='<p class="muted">No book generated yet.</p>';return;}
@@ -329,8 +329,9 @@ function makeSVG(page,style){
      inside a width:100% + max-height box with object-fit:contain shrank to a
      narrow centred strip (~60% of the card). The scene caption that used to
      be drawn INSIDE the SVG is gone too — it was hard-truncated at 60 chars
-     ("...gentle co") and could never wrap. The caption now lives in HTML
-     (bookPageHTML / renderReader, .book-caption) where it wraps fully. */
+     ("...gentle co") and could never wrap. v32: the HTML "Scene: ..." caption
+     under the picture is removed entirely too (user asked) — no caption text
+     anywhere on a book page, only the picture and the story text. */
   const h=hash(page.scene+page.text+style);
   const palettes={'Watercolor':['#fde68a','#fbcfe8','#bae6fd','#d1fae5'],'3D Cartoon':['#f59e0b','#fb7185','#60a5fa','#a78bfa'],'Pixar-inspired 3D':['#fbbf24','#f472b6','#38bdf8','#c084fc'],'Storybook Illustration':['#fde68a','#fca5a5','#93c5fd','#86efac'],'Disney-inspired Fairy Tale':['#f9a8d4','#fde68a','#a5b4fc','#fda4af'],'Anime':['#fda4af','#93c5fd','#fde68a','#c4b5fd'],'Clay Animation':['#fdba74','#fca5a5','#93c5fd','#fde68a'],'Paper Cut':['#f87171','#60a5fa','#fbbf24','#34d399'],'Hand Drawn':['#fef3c7','#fecdd3','#dbeafe','#e9d5ff'],'Digital Painting':['#c7d2fe','#fbcfe8','#fde68a','#bae6fd']};
   const pal=palettes[style]||palettes['Storybook Illustration'];
@@ -534,7 +535,7 @@ function downloadStoryText(){if(!current)return alert('Generate a book first.');
 function shareToLibrary(){if(!current)return;current.shared=true;if(!state.library.find(b=>b.id===current.id))state.library.unshift(current);saveCurrentBook();save();renderLibrary();alert('Shared to Library.');}
 function renderLibrary(){const el=document.getElementById('libraryOut');if(!el)return;const books=state.library.length?state.library:state.projects.filter(p=>p.kind==='book');el.innerHTML=books.length?books.map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||'')+'</p><p class="muted small">'+(b.pages?b.pages.length:0)+' pages · '+esc(b.type||'')+' · '+esc(b.lang||'en')+'</p><button class="btn primary" onclick="openReader(\''+b.id+'\')">📖 Read</button></div>').join(''):'<p class="muted">Library is empty — share a book from the Picture Book Generator.</p>';}
 async function openReader(id){const b=state.projects.find(p=>p.id===id)||state.library.find(p=>p.id===id);if(!b)return;await hydrateBook(b);reader={book:b,idx:0};current=b;document.getElementById('readerCard').style.display='block';document.getElementById('readerTitle').textContent=b.title;renderReader();go('library');}
-function renderReader(){const el=document.getElementById('readerOut');if(!reader.book)return;const p=reader.book.pages[reader.idx];el.innerHTML='<div class="book-page">'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p class="book-caption">Scene: '+esc(p.scene)+'</p><h3>Page '+p.n+' of '+reader.book.pages.length+'</h3><p style="font-size:19px">'+esc(p.text)+'</p></div>';}
+function renderReader(){const el=document.getElementById('readerOut');if(!reader.book)return;const p=reader.book.pages[reader.idx];el.innerHTML='<div class="book-page">'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<h3>Page '+p.n+' of '+reader.book.pages.length+'</h3><p style="font-size:19px">'+esc(p.text)+'</p></div>';}
 function readerPrev(){if(reader.idx>0){reader.idx--;renderReader();}}
 function readerNext(){if(reader.book&&reader.idx<reader.book.pages.length-1){reader.idx++;renderReader();}}
 function readAloud(){if(document.body.classList.contains('reading-aloud')){stopReadingAloud();return;}if(!reader.book)return;const p=reader.book.pages[reader.idx];const u=new SpeechSynthesisUtterance(p.text);u.rate=1;u.onend=function(){document.body.classList.remove('reading-aloud');syncReadButtons();};u.onerror=function(){document.body.classList.remove('reading-aloud');syncReadButtons();};speechSynthesis.cancel();speechSynthesis.speak(u);document.body.classList.add('reading-aloud');syncReadButtons();}
@@ -1542,9 +1543,19 @@ function qvPartImg(charId,part){
   return im;
 }
 function qvCharSVG(id){
+  if(typeof PICKER_IMGS!=='undefined'&&PICKER_IMGS['char-'+id]) return PICKER_IMGS['char-'+id];
   var c=QV_CHARS[id]; if(!c) return '';
   var inner=QV_PART_ORDER.map(function(p){return c.parts[p]||'';}).join('')+(c.parts.mouthClosed||'');
   return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><rect width="200" height="300" fill="#f8fafc"/>'+inner+'</svg>');
+}
+/* v32: original picker pictures — each style thumbnail is a real generated
+   picture in that style (picker-images.js), not the same SVG re-tinted.
+   Falls back to the built-in SVG if a picture is ever missing. */
+var QV_STYLE_THUMBS={'3D Cartoon':'style-3d','Anime':'style-anime','Pixar-inspired 3D':'style-pixar','Watercolor':'style-watercolor','Storybook Illustration':'style-storybook','Disney-inspired Fairy Tale':'style-fairytale','Clay Animation':'style-clay','Paper Cut':'style-papercut','Hand Drawn':'style-handdrawn','Digital Painting':'style-digital'};
+function qvStyleThumb(st){
+  var k=QV_STYLE_THUMBS[st];
+  if(k&&typeof PICKER_IMGS!=='undefined'&&PICKER_IMGS[k]) return PICKER_IMGS[k];
+  return makeSVG({scene:'A brave little hero in a magical forest',text:''},st);
 }
 function renderQVPickers(){
   var cs=document.getElementById('qvChars');
@@ -1554,7 +1565,7 @@ function renderQVPickers(){
   }).join('');
   var ss=document.getElementById('qvStyles');
   if(ss) ss.innerHTML=QV_STYLES.map(function(st){
-    return '<button type="button" class="qv-style'+(qvStyle===st?' sel':'')+'" onclick="qvSetStyle(\''+esc(st)+'\')"><img src="'+makeSVG({scene:'A brave little hero in a magical forest',text:''},st)+'" alt="'+esc(st)+'"><span>'+esc(st)+'</span></button>';
+    return '<button type="button" class="qv-style'+(qvStyle===st?' sel':'')+'" onclick="qvSetStyle(\''+esc(st)+'\')"><img src="'+qvStyleThumb(st)+'" alt="'+esc(st)+'"><span>'+esc(st)+'</span></button>';
   }).join('');
 }
 function qvSetStyle(st){ qvStyle=st; renderQVPickers(); }
