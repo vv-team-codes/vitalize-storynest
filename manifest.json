@@ -1,1 +1,17 @@
-{"background_color":"#fff8e7","description":"Create picture books, animations, songs and comics for children. Free, unlimited, private — everything runs in your browser.","display":"standalone","icons":[{"purpose":"any","sizes":"any","src":"icon.svg","type":"image/svg+xml"},{"purpose":"maskable","sizes":"any","src":"icon.svg","type":"image/svg+xml"}],"name":"ekiddy.com — Where Little Ideas Become Big Stories","orientation":"portrait","scope":"./","short_name":"ekiddy","start_url":"./index.html","theme_color":"#6d28d9"}
+{
+  "name": "eKiddy Creative Studio",
+  "short_name": "eKiddy",
+  "description": "Create picture books, animations, music videos, and comics for children.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF9F6",
+  "theme_color": "#6558E8",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
