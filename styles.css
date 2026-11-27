@@ -37,7 +37,7 @@ textarea{resize:vertical}
 .chip{background:#fff7ed;border:1px solid #fed7aa;border-radius:999px;padding:6px 10px;cursor:pointer;font-size:13px}
 .page-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
 .page-card{border:1px solid var(--border);border-radius:18px;overflow:hidden;background:#fff}
-.page-card img{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}
+.page-card img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
 .page-card .pad{padding:12px}
 .mono{font-family:ui-monospace,Menlo,monospace;white-space:pre-wrap;background:#f5f3ff;padding:10px;border-radius:10px}
 body.dark .mono{background:#243f3a}
@@ -516,7 +516,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#6d28d9;box-sh
 .big-cta{border:2px solid rgba(255,255,255,.4)}
 #libraryOut>p.muted:first-child,#projectsOut>p.muted:first-child,#dashRecent>p.muted:first-child{background:linear-gradient(135deg,#ede9fe,#dbeafe,#fef3c7);border:1px dashed #c4b5fd;border-radius:18px;padding:26px 18px;text-align:center;font-size:15px}
 .book-page{overflow:hidden}
-.book-page img{width:100%;height:auto;max-height:52vh;object-fit:contain;background:linear-gradient(180deg,#eef4ff,#fff8e7);border-radius:14px}
+.book-page img{display:block;width:100%;height:auto;aspect-ratio:16/9;max-height:58vh;object-fit:cover;object-position:center;background:#eef4ff;border-radius:14px}
+.book-page p{overflow-wrap:break-word}
+.book-page .book-caption{margin:10px 2px 0;font-size:14px;line-height:1.55;color:var(--muted);white-space:normal;overflow-wrap:break-word}
 .book-pager{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:14px 0 4px}
 .book-pager .btn{flex:1 1 auto;min-width:110px}
 .book-pager span{flex:1 1 auto;text-align:center}

@@ -249,7 +249,7 @@ function bookPrev(){if(!current)return;if(bookPageIdx>0){bookPageIdx--;renderBoo
 function bookNext(){if(!current)return;if(bookPageIdx<current.pages.length-1){bookPageIdx++;renderBookOut();}}
 function bookToggleAll(){bookShowAll=!bookShowAll;renderBookOut();}
 function bookPageHTML(p,i,font,bg){
-  return '<div class="book-page" style="font-family:'+esc(font)+';background:'+esc(bg)+'"><strong>Page '+p.n+'</strong>'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p>'+esc(p.text)+'</p><p class="muted small">Scene: '+esc(p.scene)+'</p><div class="row"><button class="btn" onclick="regenPage('+i+')">↻ Regenerate this page</button><button class="btn" onclick="editPageText('+i+')">✏ Edit text</button></div></div>';
+  return '<div class="book-page" style="font-family:'+esc(font)+';background:'+esc(bg)+'"><strong>Page '+p.n+'</strong>'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p class="book-caption">Scene: '+esc(p.scene)+'</p><p>'+esc(p.text)+'</p><div class="row"><button class="btn" onclick="regenPage('+i+')">↻ Regenerate this page</button><button class="btn" onclick="editPageText('+i+')">✏ Edit text</button></div></div>';
 }
 function renderBookOut(all){
   const out=document.getElementById('bookOut'); if(!current){out.innerHTML='<p class="muted">No book generated yet.</p>';return;}
@@ -324,45 +324,51 @@ function applyBible(){const el=document.getElementById('bibleOut');if(el)el.text
 /* ---------- Illustrations (procedural SVG, generated from scene + Bible + style) ---------- */
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
 function makeSVG(page,style){
+  /* v31: native 16:9 canvas (1200x675) so the picture fills the full width of
+     a book-page card with no letterbox gutters. The old 800x600 (4:3) scene
+     inside a width:100% + max-height box with object-fit:contain shrank to a
+     narrow centred strip (~60% of the card). The scene caption that used to
+     be drawn INSIDE the SVG is gone too — it was hard-truncated at 60 chars
+     ("...gentle co") and could never wrap. The caption now lives in HTML
+     (bookPageHTML / renderReader, .book-caption) where it wraps fully. */
   const h=hash(page.scene+page.text+style);
   const palettes={'Watercolor':['#fde68a','#fbcfe8','#bae6fd','#d1fae5'],'3D Cartoon':['#f59e0b','#fb7185','#60a5fa','#a78bfa'],'Pixar-inspired 3D':['#fbbf24','#f472b6','#38bdf8','#c084fc'],'Storybook Illustration':['#fde68a','#fca5a5','#93c5fd','#86efac'],'Disney-inspired Fairy Tale':['#f9a8d4','#fde68a','#a5b4fc','#fda4af'],'Anime':['#fda4af','#93c5fd','#fde68a','#c4b5fd'],'Clay Animation':['#fdba74','#fca5a5','#93c5fd','#fde68a'],'Paper Cut':['#f87171','#60a5fa','#fbbf24','#34d399'],'Hand Drawn':['#fef3c7','#fecdd3','#dbeafe','#e9d5ff'],'Digital Painting':['#c7d2fe','#fbcfe8','#fde68a','#bae6fd']};
   const pal=palettes[style]||palettes['Storybook Illustration'];
   const c1=pal[h%4],c2=pal[(h+1)%4],c3=pal[(h+2)%4],c4=pal[(h+3)%4];
   const night=h%3===0;
   const skyTop=night?'#3730a3':'#bae6fd', skyBot=night?'#1e1b4b':'#fff7d6';
-  const sunX=648+(h%60), sunY=64+((h>>2)%24);
-  const cl1x=90+(h%160), cl2x=430+((h>>3)%180);
-  const flX=[90,180,610,700,300,520], flC=[c1,c4,'#f472b6','#fbbf24',c3,'#fb7185'];
-  const stars=night?'<circle cx="120" cy="60" r="4" fill="#fff"/><circle cx="240" cy="110" r="3" fill="#fef9c3"/><circle cx="520" cy="50" r="4" fill="#fff"/><circle cx="420" cy="120" r="3" fill="#fef9c3"/><circle cx="740" cy="150" r="3" fill="#fff"/>':'';
-  const sunMoon=night?'<circle cx="'+sunX+'" cy="'+sunY+'" r="40" fill="#fef9c3"/><circle cx="'+(sunX+16)+'" cy="'+(sunY-10)+'" r="7" fill="#eab308" opacity="0.5"/><circle cx="'+(sunX-12)+'" cy="'+(sunY+12)+'" r="5" fill="#eab308" opacity="0.5"/>':'<circle cx="'+sunX+'" cy="'+sunY+'" r="42" fill="#ffd52e"/><circle cx="'+sunX+'" cy="'+sunY+'" r="58" fill="#ffd52e" opacity="0.25"/>';
-  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">'
+  const sunX=990+(h%50), sunY=72+((h>>2)%24);
+  const cl1x=130+(h%170), cl2x=620+((h>>3)%190);
+  const flX=[140,260,430,770,950,1080], flC=[c1,c4,'#f472b6','#fbbf24',c3,'#fb7185'];
+  const stars=night?'<circle cx="180" cy="70" r="4" fill="#fff"/><circle cx="360" cy="120" r="3" fill="#fef9c3"/><circle cx="780" cy="60" r="4" fill="#fff"/><circle cx="620" cy="130" r="3" fill="#fef9c3"/><circle cx="1090" cy="170" r="3" fill="#fff"/>':'';
+  const sunMoon=night?'<circle cx="'+sunX+'" cy="'+sunY+'" r="44" fill="#fef9c3"/><circle cx="'+(sunX+18)+'" cy="'+(sunY-11)+'" r="7" fill="#eab308" opacity="0.5"/><circle cx="'+(sunX-13)+'" cy="'+(sunY+13)+'" r="5" fill="#eab308" opacity="0.5"/>':'<circle cx="'+sunX+'" cy="'+sunY+'" r="46" fill="#ffd52e"/><circle cx="'+sunX+'" cy="'+sunY+'" r="64" fill="#ffd52e" opacity="0.25"/>';
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">'
   +'<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+skyTop+'"/><stop offset="1" stop-color="'+skyBot+'"/></linearGradient></defs>'
-  +'<rect width="800" height="600" fill="url(#sky)"/>'+stars+sunMoon
-  +'<g fill="#ffffff" opacity="0.9"><ellipse cx="'+cl1x+'" cy="110" rx="70" ry="24"/><ellipse cx="'+(cl1x+46)+'" cy="96" rx="46" ry="20"/><ellipse cx="'+cl2x+'" cy="70" rx="60" ry="20"/><ellipse cx="'+(cl2x+40)+'" cy="58" rx="38" ry="16"/></g>'
-  +'<g stroke="#334155" stroke-width="4" fill="none" stroke-linecap="round"><path d="M180 150 q10 -10 20 0 q10 -10 20 0"/><path d="M560 130 q10 -10 20 0 q10 -10 20 0"/></g>'
-  +'<ellipse cx="400" cy="530" rx="440" ry="100" fill="#86efac"/><ellipse cx="150" cy="500" rx="200" ry="70" fill="#4ade80"/><ellipse cx="660" cy="505" rx="210" ry="70" fill="#22c55e"/>'
-  +'<path d="M400 600 L360 470 Q400 440 440 470 L400 600 Z" fill="#fde68a"/>'
-  +'<g><rect x="96" y="380" width="16" height="90" rx="7" fill="#92400e"/><circle cx="104" cy="350" r="52" fill="#16a34a"/><circle cx="70" cy="380" r="34" fill="#22c55e"/><circle cx="140" cy="382" r="32" fill="#4ade80"/></g>'
-  +'<g><rect x="688" y="392" width="16" height="80" rx="7" fill="#92400e"/><circle cx="696" cy="366" r="44" fill="#16a34a"/><circle cx="668" cy="392" r="30" fill="#22c55e"/><circle cx="724" cy="394" r="28" fill="#4ade80"/></g>'
-  +'<g>'+flX.map(function(x,i){return '<g><circle cx="'+x+'" cy="520" r="7" fill="'+flC[i%flC.length]+'"/><circle cx="'+x+'" cy="513" r="3" fill="#fff"/></g>';}).join('')+'</g>'
-  +'<ellipse cx="400" cy="486" rx="120" ry="16" fill="#15803d" opacity="0.25"/>'
+  +'<rect width="1200" height="675" fill="url(#sky)"/>'+stars+sunMoon
+  +'<g fill="#ffffff" opacity="0.9"><ellipse cx="'+cl1x+'" cy="120" rx="78" ry="26"/><ellipse cx="'+(cl1x+52)+'" cy="104" rx="52" ry="22"/><ellipse cx="'+cl2x+'" cy="80" rx="68" ry="22"/><ellipse cx="'+(cl2x+46)+'" cy="66" rx="44" ry="18"/></g>'
+  +'<g stroke="#334155" stroke-width="4" fill="none" stroke-linecap="round"><path d="M270 165 q10 -10 20 0 q10 -10 20 0"/><path d="M860 145 q10 -10 20 0 q10 -10 20 0"/></g>'
+  +'<ellipse cx="600" cy="600" rx="700" ry="110" fill="#86efac"/><ellipse cx="230" cy="565" rx="320" ry="75" fill="#4ade80"/><ellipse cx="980" cy="570" rx="330" ry="75" fill="#22c55e"/>'
+  +'<path d="M600 675 L556 520 Q600 488 644 520 L600 675 Z" fill="#fde68a"/>'
+  +'<g><rect x="168" y="430" width="18" height="100" rx="8" fill="#92400e"/><circle cx="177" cy="400" r="58" fill="#16a34a"/><circle cx="140" cy="432" r="38" fill="#22c55e"/><circle cx="216" cy="434" r="36" fill="#4ade80"/></g>'
+  +'<g><rect x="1010" y="442" width="18" height="90" rx="8" fill="#92400e"/><circle cx="1019" cy="412" r="50" fill="#16a34a"/><circle cx="988" cy="440" r="34" fill="#22c55e"/><circle cx="1050" cy="442" r="32" fill="#4ade80"/></g>'
+  +'<g>'+flX.map(function(x,i){return '<g><circle cx="'+x+'" cy="592" r="7" fill="'+flC[i%flC.length]+'"/><circle cx="'+x+'" cy="585" r="3" fill="#fff"/></g>';}).join('')+'</g>'
+  +'<ellipse cx="600" cy="522" rx="130" ry="18" fill="#15803d" opacity="0.25"/>'
   +'<g>'
-  +'<path d="M352 300 Q336 210 372 196 Q400 188 428 196 Q464 210 448 300 Q400 318 352 300 Z" fill="'+c3+'"/>'
-  +'<path d="M352 236 Q338 150 366 138 Q382 132 384 168 Q386 210 372 236 Z" fill="#ffffff" stroke="'+c3+'" stroke-width="4"/>'
-  +'<path d="M448 236 Q462 150 434 138 Q418 132 416 168 Q414 210 428 236 Z" fill="#ffffff" stroke="'+c3+'" stroke-width="4"/>'
-  +'<path d="M360 200 Q356 160 370 152 Q380 150 380 190 Z" fill="#fda4af"/>'
-  +'<path d="M440 200 Q444 160 430 152 Q420 150 420 190 Z" fill="#fda4af"/>'
-  +'<circle cx="400" cy="300" r="82" fill="#ffffff" stroke="'+c3+'" stroke-width="6"/>'
-  +'<circle cx="370" cy="292" r="12" fill="#1e1b2e"/><circle cx="430" cy="292" r="12" fill="#1e1b2e"/>'
-  +'<circle cx="374" cy="288" r="4" fill="#fff"/><circle cx="434" cy="288" r="4" fill="#fff"/>'
-  +'<circle cx="348" cy="322" r="12" fill="#fda4af" opacity="0.8"/><circle cx="452" cy="322" r="12" fill="#fda4af" opacity="0.8"/>'
-  +'<path d="M372 330 Q400 352 428 330" stroke="#1e1b2e" stroke-width="5" fill="none" stroke-linecap="round"/>'
-  +'<path d="M330 380 Q400 330 470 380 L462 452 Q400 470 338 452 Z" fill="'+c1+'"/>'
-  +'<path d="M400 392 l7 14 15 2 -11 11 3 15 -14 -8 -14 8 3 -15 -11 -11 15 -2z" fill="#ffd52e"/>'
-  +'<circle cx="470" cy="420" r="16" fill="#fde68a" stroke="#b45309" stroke-width="3"/>'
-  +'<circle cx="470" cy="420" r="26" fill="#ffd52e" opacity="0.3"/>'
-  +'</g>'
-  +'<text x="400" y="580" text-anchor="middle" font-family="Georgia,serif" font-size="21" fill="#334155">'+esc(page.scene.slice(0,60))+'</text></svg>';
+  +'<path d="M552 340 Q536 235 572 220 Q600 210 628 220 Q664 235 648 340 Q600 358 552 340 Z" fill="'+c3+'"/>'
+  +'<path d="M552 268 Q538 170 566 156 Q582 148 584 188 Q586 235 572 268 Z" fill="#ffffff" stroke="'+c3+'" stroke-width="4"/>'
+  +'<path d="M648 268 Q662 170 634 156 Q618 148 616 188 Q614 235 628 268 Z" fill="#ffffff" stroke="'+c3+'" stroke-width="4"/>'
+  +'<path d="M560 228 Q556 182 570 172 Q580 168 580 212 Z" fill="#fda4af"/>'
+  +'<path d="M640 228 Q644 182 630 172 Q620 168 620 212 Z" fill="#fda4af"/>'
+  +'<circle cx="600" cy="335" r="88" fill="#ffffff" stroke="'+c3+'" stroke-width="6"/>'
+  +'<circle cx="568" cy="326" r="13" fill="#1e1b2e"/><circle cx="632" cy="326" r="13" fill="#1e1b2e"/>'
+  +'<circle cx="572" cy="322" r="4" fill="#fff"/><circle cx="636" cy="322" r="4" fill="#fff"/>'
+  +'<circle cx="542" cy="358" r="13" fill="#fda4af" opacity="0.8"/><circle cx="658" cy="358" r="13" fill="#fda4af" opacity="0.8"/>'
+  +'<path d="M568 366 Q600 390 632 366" stroke="#1e1b2e" stroke-width="5" fill="none" stroke-linecap="round"/>'
+  +'<path d="M528 420 Q600 368 672 420 L664 496 Q600 516 536 496 Z" fill="'+c1+'"/>'
+  +'<path d="M600 432 l7 14 15 2 -11 11 3 15 -14 -8 -14 8 3 -15 -11 -11 15 -2z" fill="#ffd52e"/>'
+  +'<circle cx="674" cy="462" r="17" fill="#fde68a" stroke="#b45309" stroke-width="3"/>'
+  +'<circle cx="674" cy="462" r="28" fill="#ffd52e" opacity="0.3"/>'
+  +'</g></svg>';
   return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
 /* ---- v13: PICTURE GENERATION — through the site's own image service ----
@@ -411,7 +417,7 @@ function fetchWithTimeout(url,ms,opts){const c=new AbortController();const t=set
 function isSVGImg(u){return typeof u==='string'&&u.indexOf('data:image/svg+xml')===0;}
 async function fetchGeneratedImage(prompt,seed){
   await waitImageSlot();
-  const r=await fetchWithTimeout(IMAGE_PROXY_URL,90000,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,seed:seed,width:768,height:768})});
+  const r=await fetchWithTimeout(IMAGE_PROXY_URL,90000,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,seed:seed,width:1024,height:576})});
   if(!r.ok){const e=new Error('Image service HTTP '+r.status);e.status=r.status;throw e;}
   const j=await r.json();
   if(!j||typeof j.image!=='string'||j.image.indexOf('data:image/')!==0) throw new Error('Image service: no image in response');
@@ -528,7 +534,7 @@ function downloadStoryText(){if(!current)return alert('Generate a book first.');
 function shareToLibrary(){if(!current)return;current.shared=true;if(!state.library.find(b=>b.id===current.id))state.library.unshift(current);saveCurrentBook();save();renderLibrary();alert('Shared to Library.');}
 function renderLibrary(){const el=document.getElementById('libraryOut');if(!el)return;const books=state.library.length?state.library:state.projects.filter(p=>p.kind==='book');el.innerHTML=books.length?books.map(b=>'<div class="card"><h3>'+esc(b.title)+'</h3><p>'+esc(b.desc||'')+'</p><p class="muted small">'+(b.pages?b.pages.length:0)+' pages · '+esc(b.type||'')+' · '+esc(b.lang||'en')+'</p><button class="btn primary" onclick="openReader(\''+b.id+'\')">📖 Read</button></div>').join(''):'<p class="muted">Library is empty — share a book from the Picture Book Generator.</p>';}
 async function openReader(id){const b=state.projects.find(p=>p.id===id)||state.library.find(p=>p.id===id);if(!b)return;await hydrateBook(b);reader={book:b,idx:0};current=b;document.getElementById('readerCard').style.display='block';document.getElementById('readerTitle').textContent=b.title;renderReader();go('library');}
-function renderReader(){const el=document.getElementById('readerOut');if(!reader.book)return;const p=reader.book.pages[reader.idx];el.innerHTML='<div class="book-page">'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<h3>Page '+p.n+' of '+reader.book.pages.length+'</h3><p style="font-size:19px">'+esc(p.text)+'</p></div>';}
+function renderReader(){const el=document.getElementById('readerOut');if(!reader.book)return;const p=reader.book.pages[reader.idx];el.innerHTML='<div class="book-page">'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p class="book-caption">Scene: '+esc(p.scene)+'</p><h3>Page '+p.n+' of '+reader.book.pages.length+'</h3><p style="font-size:19px">'+esc(p.text)+'</p></div>';}
 function readerPrev(){if(reader.idx>0){reader.idx--;renderReader();}}
 function readerNext(){if(reader.book&&reader.idx<reader.book.pages.length-1){reader.idx++;renderReader();}}
 function readAloud(){if(document.body.classList.contains('reading-aloud')){stopReadingAloud();return;}if(!reader.book)return;const p=reader.book.pages[reader.idx];const u=new SpeechSynthesisUtterance(p.text);u.rate=1;u.onend=function(){document.body.classList.remove('reading-aloud');syncReadButtons();};u.onerror=function(){document.body.classList.remove('reading-aloud');syncReadButtons();};speechSynthesis.cancel();speechSynthesis.speak(u);document.body.classList.add('reading-aloud');syncReadButtons();}
