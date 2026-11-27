@@ -9,6 +9,9 @@
     },
     "api/generate-story.js": {
       "memory": 1024
+    },
+    "api/describe-image.js": {
+      "memory": 1024
     }
   }
 }
