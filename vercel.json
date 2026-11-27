@@ -1,1 +1,14 @@
-{"$schema":"https://openapi.vercel.sh/vercel.json","functions":{"api/generate-image.js":{"memory":1024},"api/generate-video.js":{"memory":1024}}}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/generate-image.js": {
+      "memory": 1024
+    },
+    "api/generate-video.js": {
+      "memory": 1024
+    },
+    "api/generate-story.js": {
+      "memory": 1024
+    }
+  }
+}
