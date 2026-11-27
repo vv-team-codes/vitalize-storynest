@@ -236,15 +236,34 @@ function generateBook(){
      background, one at a time with progress. Step 5 buttons still
      work for re-doing them. */
   current.pages.forEach(function(p){p.img=makeSVG(p,current.style);p.prompt=p.scene+' — '+bibleText()+' — style: '+current.style;});
-  save(); renderBookOut(); renderEditor(); applyBible();
+  save(); bookPageIdx=0; bookShowAll=false; renderBookOut(); renderEditor(); applyBible();
   illustrateAll();
   document.querySelectorAll('.step').forEach(s=>s.classList.toggle('on',+s.dataset.s<=3));
 }
-function renderBookOut(){
+/* v30: Step 3 shows ONE page at a time with Previous / Next buttons, so
+   the page always fits the device screen — the old stacked list made
+   every illustration ~800px tall and the first screen showed only sky.
+   "Show all pages" restores the full list (used by PDF export too). */
+let bookPageIdx=0, bookShowAll=false;
+function bookPrev(){if(!current)return;if(bookPageIdx>0){bookPageIdx--;renderBookOut();}}
+function bookNext(){if(!current)return;if(bookPageIdx<current.pages.length-1){bookPageIdx++;renderBookOut();}}
+function bookToggleAll(){bookShowAll=!bookShowAll;renderBookOut();}
+function bookPageHTML(p,i,font,bg){
+  return '<div class="book-page" style="font-family:'+esc(font)+';background:'+esc(bg)+'"><strong>Page '+p.n+'</strong>'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p>'+esc(p.text)+'</p><p class="muted small">Scene: '+esc(p.scene)+'</p><div class="row"><button class="btn" onclick="regenPage('+i+')">↻ Regenerate this page</button><button class="btn" onclick="editPageText('+i+')">✏ Edit text</button></div></div>';
+}
+function renderBookOut(all){
   const out=document.getElementById('bookOut'); if(!current){out.innerHTML='<p class="muted">No book generated yet.</p>';return;}
   const font=document.getElementById('edFont')?document.getElementById('edFont').value:'Georgia, serif';
+  const bg=document.getElementById('edBg')?document.getElementById('edBg').value:'#fff8ec';
+  const showAll=all===true||bookShowAll;
+  if(bookPageIdx>=current.pages.length)bookPageIdx=0;
+  if(bookPageIdx<0)bookPageIdx=0;
   out.innerHTML='<h3>'+esc(current.title)+'</h3><p>'+esc(current.desc)+'</p><p><strong>Moral:</strong> '+esc(current.moral)+'</p><p><strong>Characters:</strong> '+esc(current.characters.join(' | '))+'</p>'+
-  current.pages.map((p,i)=>'<div class="book-page" style="font-family:'+esc(font)+';background:'+esc(document.getElementById('edBg')?document.getElementById('edBg').value:'#fff8ec')+'"><strong>Page '+p.n+'</strong>'+(p.img?'<img src="'+p.img+'" alt="Page illustration">':'')+'<p>'+esc(p.text)+'</p><p class="muted small">Scene: '+esc(p.scene)+'</p><div class="row"><button class="btn" onclick="regenPage('+i+')">↻ Regenerate this page</button><button class="btn" onclick="editPageText('+i+')">✏ Edit text</button></div></div>').join('');
+  (showAll
+    ? current.pages.map((p,i)=>bookPageHTML(p,i,font,bg)).join('')
+    : bookPageHTML(current.pages[bookPageIdx],bookPageIdx,font,bg)
+      +'<div class="book-pager"><button class="btn" onclick="bookPrev()"'+(bookPageIdx===0?' disabled':'')+'>← Previous</button><span class="muted"><strong>Page '+(bookPageIdx+1)+' of '+current.pages.length+'</strong></span><button class="btn primary" onclick="bookNext()"'+(bookPageIdx>=current.pages.length-1?' disabled':'')+'>Next →</button></div>')
+  +'<div class="row"><button class="btn" onclick="bookToggleAll()">'+(showAll?'Show one page at a time':'Show all pages')+'</button></div>';
 }
 function regenPage(i){if(!current)return;const beats=TYPES[current.type]||TYPES.Adventure;const b=beats[(i+2)%beats.length];current.pages[i].text=current.pages[i].n===current.pages.length?current.pages[i].text:current.hero+' discovered '+b+' and smiled — a small brave step, and then another.';current.pages[i].scene=current.hero+', '+b+', soft light';current.pages[i].img=makeSVG(current.pages[i],current.style);current.pages[i].prompt=current.pages[i].scene+' — '+bibleText()+' — style: '+current.style;save();renderBookOut();renderEditor();}
 function editPageText(i){const t=prompt('Edit page text:',current.pages[i].text);if(t!=null){current.pages[i].text=t;save();renderBookOut();renderEditor();}}
@@ -308,9 +327,42 @@ function makeSVG(page,style){
   const h=hash(page.scene+page.text+style);
   const palettes={'Watercolor':['#fde68a','#fbcfe8','#bae6fd','#d1fae5'],'3D Cartoon':['#f59e0b','#fb7185','#60a5fa','#a78bfa'],'Pixar-inspired 3D':['#fbbf24','#f472b6','#38bdf8','#c084fc'],'Storybook Illustration':['#fde68a','#fca5a5','#93c5fd','#86efac'],'Disney-inspired Fairy Tale':['#f9a8d4','#fde68a','#a5b4fc','#fda4af'],'Anime':['#fda4af','#93c5fd','#fde68a','#c4b5fd'],'Clay Animation':['#fdba74','#fca5a5','#93c5fd','#fde68a'],'Paper Cut':['#f87171','#60a5fa','#fbbf24','#34d399'],'Hand Drawn':['#fef3c7','#fecdd3','#dbeafe','#e9d5ff'],'Digital Painting':['#c7d2fe','#fbcfe8','#fde68a','#bae6fd']};
   const pal=palettes[style]||palettes['Storybook Illustration'];
-  const c1=pal[h%4],c2=pal[(h+1)%4],c3=pal[(h+2)%4];
-  const sunX=80+(h%200), moon=h%2===0;
-  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="'+c2+'" opacity="0.35"/><circle cx="'+sunX+'" cy="90" r="55" fill="'+c1+'"/>'+(moon?'<circle cx="650" cy="80" r="38" fill="#fef9c3"/>':'')+'<ellipse cx="400" cy="520" rx="420" ry="90" fill="#86efac"/><ellipse cx="180" cy="480" rx="180" ry="60" fill="#4ade80"/><ellipse cx="620" cy="490" rx="200" ry="60" fill="#22c55e"/><circle cx="400" cy="360" r="90" fill="#fff" stroke="'+c3+'" stroke-width="6"/><circle cx="370" cy="350" r="12" fill="#1e1b2e"/><circle cx="430" cy="350" r="12" fill="#1e1b2e"/><path d="M370 390 Q400 415 430 390" stroke="#1e1b2e" stroke-width="5" fill="none"/><path d="M330 290 Q400 230 470 290" fill="'+c1+'"/><rect x="360" y="450" width="80" height="70" rx="14" fill="'+c3+'"/><text x="400" y="580" text-anchor="middle" font-family="Georgia,serif" font-size="22" fill="#334155">'+esc(page.scene.slice(0,60))+'</text></svg>';
+  const c1=pal[h%4],c2=pal[(h+1)%4],c3=pal[(h+2)%4],c4=pal[(h+3)%4];
+  const night=h%3===0;
+  const skyTop=night?'#3730a3':'#bae6fd', skyBot=night?'#1e1b4b':'#fff7d6';
+  const sunX=648+(h%60), sunY=64+((h>>2)%24);
+  const cl1x=90+(h%160), cl2x=430+((h>>3)%180);
+  const flX=[90,180,610,700,300,520], flC=[c1,c4,'#f472b6','#fbbf24',c3,'#fb7185'];
+  const stars=night?'<circle cx="120" cy="60" r="4" fill="#fff"/><circle cx="240" cy="110" r="3" fill="#fef9c3"/><circle cx="520" cy="50" r="4" fill="#fff"/><circle cx="420" cy="120" r="3" fill="#fef9c3"/><circle cx="740" cy="150" r="3" fill="#fff"/>':'';
+  const sunMoon=night?'<circle cx="'+sunX+'" cy="'+sunY+'" r="40" fill="#fef9c3"/><circle cx="'+(sunX+16)+'" cy="'+(sunY-10)+'" r="7" fill="#eab308" opacity="0.5"/><circle cx="'+(sunX-12)+'" cy="'+(sunY+12)+'" r="5" fill="#eab308" opacity="0.5"/>':'<circle cx="'+sunX+'" cy="'+sunY+'" r="42" fill="#ffd52e"/><circle cx="'+sunX+'" cy="'+sunY+'" r="58" fill="#ffd52e" opacity="0.25"/>';
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">'
+  +'<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+skyTop+'"/><stop offset="1" stop-color="'+skyBot+'"/></linearGradient></defs>'
+  +'<rect width="800" height="600" fill="url(#sky)"/>'+stars+sunMoon
+  +'<g fill="#ffffff" opacity="0.9"><ellipse cx="'+cl1x+'" cy="110" rx="70" ry="24"/><ellipse cx="'+(cl1x+46)+'" cy="96" rx="46" ry="20"/><ellipse cx="'+cl2x+'" cy="70" rx="60" ry="20"/><ellipse cx="'+(cl2x+40)+'" cy="58" rx="38" ry="16"/></g>'
+  +'<g stroke="#334155" stroke-width="4" fill="none" stroke-linecap="round"><path d="M180 150 q10 -10 20 0 q10 -10 20 0"/><path d="M560 130 q10 -10 20 0 q10 -10 20 0"/></g>'
+  +'<ellipse cx="400" cy="530" rx="440" ry="100" fill="#86efac"/><ellipse cx="150" cy="500" rx="200" ry="70" fill="#4ade80"/><ellipse cx="660" cy="505" rx="210" ry="70" fill="#22c55e"/>'
+  +'<path d="M400 600 L360 470 Q400 440 440 470 L400 600 Z" fill="#fde68a"/>'
+  +'<g><rect x="96" y="380" width="16" height="90" rx="7" fill="#92400e"/><circle cx="104" cy="350" r="52" fill="#16a34a"/><circle cx="70" cy="380" r="34" fill="#22c55e"/><circle cx="140" cy="382" r="32" fill="#4ade80"/></g>'
+  +'<g><rect x="688" y="392" width="16" height="80" rx="7" fill="#92400e"/><circle cx="696" cy="366" r="44" fill="#16a34a"/><circle cx="668" cy="392" r="30" fill="#22c55e"/><circle cx="724" cy="394" r="28" fill="#4ade80"/></g>'
+  +'<g>'+flX.map(function(x,i){return '<g><circle cx="'+x+'" cy="520" r="7" fill="'+flC[i%flC.length]+'"/><circle cx="'+x+'" cy="513" r="3" fill="#fff"/></g>';}).join('')+'</g>'
+  +'<ellipse cx="400" cy="486" rx="120" ry="16" fill="#15803d" opacity="0.25"/>'
+  +'<g>'
+  +'<path d="M352 300 Q336 210 372 196 Q400 188 428 196 Q464 210 448 300 Q400 318 352 300 Z" fill="'+c3+'"/>'
+  +'<path d="M352 236 Q338 150 366 138 Q382 132 384 168 Q386 210 372 236 Z" fill="#ffffff" stroke="'+c3+'" stroke-width="4"/>'
+  +'<path d="M448 236 Q462 150 434 138 Q418 132 416 168 Q414 210 428 236 Z" fill="#ffffff" stroke="'+c3+'" stroke-width="4"/>'
+  +'<path d="M360 200 Q356 160 370 152 Q380 150 380 190 Z" fill="#fda4af"/>'
+  +'<path d="M440 200 Q444 160 430 152 Q420 150 420 190 Z" fill="#fda4af"/>'
+  +'<circle cx="400" cy="300" r="82" fill="#ffffff" stroke="'+c3+'" stroke-width="6"/>'
+  +'<circle cx="370" cy="292" r="12" fill="#1e1b2e"/><circle cx="430" cy="292" r="12" fill="#1e1b2e"/>'
+  +'<circle cx="374" cy="288" r="4" fill="#fff"/><circle cx="434" cy="288" r="4" fill="#fff"/>'
+  +'<circle cx="348" cy="322" r="12" fill="#fda4af" opacity="0.8"/><circle cx="452" cy="322" r="12" fill="#fda4af" opacity="0.8"/>'
+  +'<path d="M372 330 Q400 352 428 330" stroke="#1e1b2e" stroke-width="5" fill="none" stroke-linecap="round"/>'
+  +'<path d="M330 380 Q400 330 470 380 L462 452 Q400 470 338 452 Z" fill="'+c1+'"/>'
+  +'<path d="M400 392 l7 14 15 2 -11 11 3 15 -14 -8 -14 8 3 -15 -11 -11 15 -2z" fill="#ffd52e"/>'
+  +'<circle cx="470" cy="420" r="16" fill="#fde68a" stroke="#b45309" stroke-width="3"/>'
+  +'<circle cx="470" cy="420" r="26" fill="#ffd52e" opacity="0.3"/>'
+  +'</g>'
+  +'<text x="400" y="580" text-anchor="middle" font-family="Georgia,serif" font-size="21" fill="#334155">'+esc(page.scene.slice(0,60))+'</text></svg>';
   return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
 /* ---- v13: PICTURE GENERATION — through the site's own image service ----
@@ -470,7 +522,7 @@ function renderIllus(){const el=document.getElementById('illusOut');if(!el||!cur
 async function editPrompt(i){const t=prompt('Edit image prompt:',current.pages[i].prompt||current.pages[i].scene);if(t!=null){current.pages[i].prompt=t;try{current.pages[i].img=await fetchGeneratedImage(t+' — '+bibleText(),Date.now()%1000000);}catch(e){current.pages[i].img=makeSVG({scene:t,text:current.pages[i].text},current.style);}save();renderIllus();renderEditor();}}
 
 /* ---------- Export / Reader ---------- */
-function exportPDF(kind){if(kind==='comic'){window.print();return;}if(!current){const b=reader.book;if(b){current=b;}else return alert('Open or generate a book first.');}renderBookOut();setTimeout(()=>window.print(),100);}
+function exportPDF(kind){if(kind==='comic'){window.print();return;}if(!current){const b=reader.book;if(b){current=b;}else return alert('Open or generate a book first.');}renderBookOut(true);setTimeout(function(){window.print();setTimeout(renderBookOut,800);},100);}
 function downloadPageImages(){if(!current)return alert('Generate a book first.');current.pages.forEach((p,i)=>{if(!p.img)return;const a=document.createElement('a');a.href=p.img;a.download=(current.title.replace(/\W+/g,'-')+'-page-'+p.n+'.svg');a.click();});}
 function downloadStoryText(){if(!current)return alert('Generate a book first.');const txt=current.title+'\n'+current.desc+'\nMoral: '+current.moral+'\n\n'+current.pages.map(p=>'Page '+p.n+': '+p.text).join('\n\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download=current.title.replace(/\W+/g,'-')+'.txt';a.click();}
 function shareToLibrary(){if(!current)return;current.shared=true;if(!state.library.find(b=>b.id===current.id))state.library.unshift(current);saveCurrentBook();save();renderLibrary();alert('Shared to Library.');}
@@ -1740,10 +1792,14 @@ function generateComic(){
 }
 
 /* ---------- Providers / Settings ---------- */
-const PROVIDERS=[{id:'runway',name:'Runway (video)',endpoint:'https://api.runwayml.com/v1'},{id:'pika',name:'Pika (video)',endpoint:'https://api.pika.art/v1'},{id:'luma',name:'Luma Dream Machine (video)',endpoint:'https://api.lumalabs.ai/dream-machine/v1'},{id:'kling',name:'Kling (video)',endpoint:'https://api.klingai.com/v1'},{id:'veo',name:'Veo / Google (video)',endpoint:'https://generativelanguage.googleapis.com/v1beta'},{id:'openai',name:'OpenAI (LLM / image)',endpoint:'https://api.openai.com/v1'}];
-function renderProviders(){const el=document.getElementById('providerList');if(!el)return;el.innerHTML=PROVIDERS.map(p=>{const s=state.providers[p.id]||{};const st=s.verified?'✅ Verified':(s.key?'Key saved — not verified':'Not connected');return '<div class="card"><h3>'+esc(p.name)+'</h3><p class="muted small">'+esc(p.endpoint)+'</p>'+'<p><strong>'+st+'</strong></p><input type="password" id="key-'+p.id+'" placeholder="API key (stored only in this browser)" value="'+esc(s.key||'')+'"><div class="row"><button class="btn" onclick="saveKey(\''+p.id+'\')">Save key</button><button class="btn" onclick="testProvider(\''+p.id+'\')">Test Connection</button></div><p class="small" id="test-'+p.id+'"></p></div>';}).join('');}
-function saveKey(id){const v=document.getElementById('key-'+id).value.trim();state.providers[id]={key:v,verified:false};save();renderProviders();document.getElementById('test-'+id).textContent='Key saved — not verified. Press Test Connection.';}
-async function testProvider(id){const p=PROVIDERS.find(x=>x.id===id);const s=state.providers[id]||{};const el=document.getElementById('test-'+id);if(!s.key){el.textContent='No key saved — cannot test.';return;}el.textContent='Testing…';try{const r=await fetch(p.endpoint,{method:'GET',headers:s.key?{Authorization:'Bearer '+s.key}:{},mode:'cors'});if(r.ok||r.status===401||r.status===403){s.verified=r.ok;save();renderProviders();document.getElementById('test-'+id).textContent=r.ok?'✅ Verified — provider responded.':'Provider responded '+r.status+' — key not accepted. Key saved — not verified.';}else{s.verified=false;save();renderProviders();document.getElementById('test-'+id).textContent='Provider responded '+r.status+'. Key saved — not verified.';}}catch(e){s.verified=false;save();renderProviders();const t=document.getElementById('test-'+id);if(t)t.textContent='Could not reach provider from this browser (network/CORS). Key saved — not verified. This does not claim a fake connection.';}}
+/* v30: external video/LLM providers are GONE — video is made in-site by
+   the built-in renderer (v24/v28) and pictures come from the site's own
+   image service, so there is nothing to connect and no key to paste.
+   The old provider list (Runway / Pika / Luma / Kling / Veo / OpenAI)
+   and its Save-key / Test-Connection code are removed; any key a user
+   saved earlier stays untouched in their own browser storage but is
+   never read or sent anywhere now. */
+function renderProviders(){const el=document.getElementById('providerList');if(!el)return;el.innerHTML='<div class="card"><h3>✅ Built-in engine only — nothing to connect</h3><p>Stories, pictures, music and video are all made by the built-in engine, right here in your browser. There are no external providers to connect, no API keys to paste, and no extra billing — everything is free and unlimited.</p><p class="muted small">Pictures are generated through the site\'s own image service (its key lives server-side); the video renderer runs entirely in this browser.</p></div>';}
 function setTheme(t){state.theme=t;document.body.className=t==='dark'?'dark':'';save();}
 function exportAllData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='vitalize-storynest-data.json';a.click();}
 function clearAllData(){if(!confirm('Delete ALL local ekiddy.com data in this browser?'))return;localStorage.removeItem(LS);location.reload();}

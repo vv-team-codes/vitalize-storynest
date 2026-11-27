@@ -252,3 +252,14 @@ body:not(.signed-in) .welcome-hero{min-height:100vh;min-height:100svh}
 @media (prefers-reduced-motion:reduce){
   .hero-video{display:none}
 }
+
+/* ---- v30: hero-video playback proof + readability ----
+   The v27 retry logic is sound, but the only proof of playback was the
+   .hero-video-on class (added on the 'playing' event). hero-video.js
+   now ALSO stamps data-video="playing" on the hero and
+   data-playing="true" on the <video> itself, so playback is visible
+   in the DOM — and the overlays hide on that attribute too, as a
+   backup if the class is ever missed. A stronger bottom gradient
+   keeps the headline readable on short screens. */
+.welcome-hero[data-video="playing"] .hero-glow,.welcome-hero[data-video="playing"] .hero-lantern,.welcome-hero[data-video="playing"] .sparkles,.welcome-hero[data-video="playing"] .hero-clouds,.welcome-hero[data-video="playing"] .hero-shimmer,.welcome-hero[data-video="playing"] .hero-tree-glow,.welcome-hero[data-video="playing"] .hero-leaves,.welcome-hero[data-video="playing"] .hero-water,.welcome-hero[data-video="playing"] .hero-ripples,.welcome-hero[data-video="playing"] .hero-grass{display:none}
+.welcome-hero::after{background:linear-gradient(180deg,rgba(4,13,40,.32),transparent 22%,transparent 62%,rgba(4,20,37,.55))}

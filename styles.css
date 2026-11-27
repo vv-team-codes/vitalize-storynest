@@ -480,3 +480,56 @@ body:not(.signed-in).on-home main{padding-bottom:0}
 .qv-anim-row{margin-top:10px}
 body.dark .qv-char,body.dark .qv-style{background:#1e1b4b;border-color:#312e81}
 @media(max-width:640px){.qv-grid{grid-template-columns:1fr}}
+
+/* ---- v30: full-site redesign polish + fit-to-device + Step 3 pager ----
+   Redesign: every page gets the same polished system — gradient accent
+   bar under page titles, softer + deeper cards, gradient-bordered
+   creation-choice cards, focus rings on inputs, warmer buttons.
+   Fit (the user rule: the site must stick to the device screen):
+   - overflow-x:clip on html/body (clip, not hidden, so the sticky
+     topbar keeps working) — no horizontal overflow on any screen.
+   - img/video/canvas can never exceed the viewport width; grids get
+     min-width:0 children so a long word or wide control cannot push
+     a page wider than the device.
+   - Book illustrations are capped in height (52vh desktop, 40vh
+     phone) with object-fit:contain, so a whole picture is visible in
+     one screen instead of a tall strip showing only sky.
+   - Step 3 pager: Previous / Page X of Y / Next row, full-width
+     buttons on phones. */
+html,body{overflow-x:hidden;overflow-x:clip}
+img,video,canvas{max-width:100%}
+img{height:auto}
+p,h1,h2,h3,.card{overflow-wrap:break-word}
+.mono{overflow-wrap:anywhere}
+input,select,textarea{max-width:100%}
+.form-grid>*,.qv-grid>*,.grid3>*,.simple-choices>*,.page-grid>*,.anim-layout>*,.anim-idea-grid>*,.anim-right>*{min-width:0}
+.page>h1::after{content:"";display:block;width:72px;height:5px;border-radius:99px;background:linear-gradient(90deg,#6d28d9,#2563eb,#f59e0b);margin-top:10px}
+.card{border-radius:22px;box-shadow:0 6px 22px rgba(109,40,217,.09)}
+.card>h3{font-size:18px;letter-spacing:-.2px}
+.btn.primary{box-shadow:0 6px 18px rgba(109,40,217,.28)}
+.btn{box-shadow:0 2px 8px rgba(109,40,217,.07)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#6d28d9;box-shadow:0 0 0 3px rgba(109,40,217,.18)}
+.step{padding:8px 12px;font-weight:600}
+.step.on{box-shadow:0 3px 10px rgba(109,40,217,.3)}
+.simple-choices button{background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#6d28d9,#2563eb,#f59e0b) border-box;border:2px solid transparent}
+.simple-choices button:hover{box-shadow:0 10px 26px rgba(109,40,217,.2)}
+.big-cta{border:2px solid rgba(255,255,255,.4)}
+#libraryOut>p.muted:first-child,#projectsOut>p.muted:first-child,#dashRecent>p.muted:first-child{background:linear-gradient(135deg,#ede9fe,#dbeafe,#fef3c7);border:1px dashed #c4b5fd;border-radius:18px;padding:26px 18px;text-align:center;font-size:15px}
+.book-page{overflow:hidden}
+.book-page img{width:100%;height:auto;max-height:52vh;object-fit:contain;background:linear-gradient(180deg,#eef4ff,#fff8e7);border-radius:14px}
+.book-pager{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:14px 0 4px}
+.book-pager .btn{flex:1 1 auto;min-width:110px}
+.book-pager span{flex:1 1 auto;text-align:center}
+.book-pager .btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none}
+.qv-card label{overflow-wrap:break-word}
+.qv-card .row label{font-weight:600}
+@media(max-width:640px){
+  .book-page img{max-height:40vh}
+  .book-pager .btn{min-width:0;flex:1 1 40%}
+  .page>h1::after{width:56px}
+  .card{border-radius:18px}
+}
+@media(max-width:380px){
+  .book-pager .btn{flex:1 1 100%}
+  .book-pager span{order:-1;flex-basis:100%;margin-bottom:2px}
+}

@@ -11,12 +11,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ekiddy">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=26">
+<link rel="stylesheet" href="styles.css?v=30">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="hero.css?v=23">
+<link rel="stylesheet" href="hero.css?v=30">
 <link rel="stylesheet" href="hero-bg.css?v=15">
 <link rel="stylesheet" href="logo.css?v=15">
-<script src="hero-video.js?v=27" defer></script>
+<script src="hero-video.js?v=30" defer></script>
 <link rel="apple-touch-icon" href="icon.svg">
 </head>
 <body class="on-home">
@@ -117,7 +117,7 @@
   <div class="grid3">
     <div class="card"><h3>Free — ₹0</h3><p>Unlimited picture books, animations, songs and comics. No payment, no upload to a server — your work stays in your browser.</p></div>
     <div class="card"><h3>What is included</h3><p>Picture Book Generator, Animation Studio, Music Video Creator, Comic Creator, Library, PDF export, read-aloud.</p></div>
-    <div class="card"><h3>Optional extras</h3><p>External AI providers (Runway / Pika / Luma / Kling / Veo, LLM, image, music) are optional in Settings and have their own billing if you connect one.</p></div>
+    <div class="card"><h3>Everything is included</h3><p>No external services, no API keys, no extra billing. Stories, pictures, music and video are all made by the built-in engine, right here in your browser.</p></div>
   </div>
   <div class="row"><button class="btn primary" onclick="go('book')">Create Your Story →</button></div>
 </section>
@@ -307,7 +307,6 @@
         <p class="muted small" id="rvNote">Needs a storyboard first — tap “Generate storyboard” above. Up to 8 scenes × 8 seconds ≈ 1 minute. If the video service is busy, the built-in renderer above still works.</p>
         <div class="anim-video-row"><video id="rvVideo" controls playsinline style="display:none"></video><div class="anim-video-side"><div class="row"><a class="btn primary" id="rvJoinDownload" style="display:none" href="#">⬇ Download 1-minute video</a></div><p class="muted small" id="rvJoinNote"></p></div></div>
       </div>
-      <details class="card anim-providers-card" style="display:none"><summary>External video providers</summary><p class="muted small">Configure in Settings → Providers. Runway, Pika, Luma, Kling, Veo — a saved key shows “Key saved — not verified” until Test Connection passes. Copy-ready prompts above are made for pasting into any of them.</p></details>
     </div>
   </div>
 </section>
@@ -326,7 +325,7 @@
     <div id="songOut"></div>
   </div>
   <div class="card"><h3>Melody &amp; video</h3>
-    <p><strong>Melody is not rendered in this standalone build.</strong> No music-generation provider is connected, and this app does not fake a melody. Connect a provider in Settings → Providers to enable melody generation; until then you can use the lyrics + scene briefs below with your own music tool.</p>
+    <p><strong>Melody is made by the built-in music bed.</strong> The Animation Studio video renderer plays a gentle built-in melody with your song's pictures — no external service, no key, no extra billing. The lyrics and scene briefs below are ready to sing along, or to pair with that music track.</p>
     <div id="musicScenes"></div>
   </div>
 </section>
@@ -378,10 +377,10 @@
   <button class="btn back-btn" type="button" onclick="go('home')">← Back</button>
   <h1>⚙️ Settings</h1>
   <div class="card"><h3>Generation limits</h3><p><strong>Generation limits: None.</strong> Unlimited, private, owner-only generation. No daily caps, no token counting. If this site ever goes public to new users, revisit limits then — do not re-add them on your own for private use.</p>
-  <p class="muted small">Honest note: external providers still have their own credits/billing if you connect one. Unlimited here applies to the built-in engine and built-in renderer.</p></div>
+  <p class="muted small">Everything here is made by the built-in engine — no external service, no key, no extra billing.</p></div>
   <div class="card"><h3>Theme</h3><div class="row"><button class="btn" onclick="setTheme('indigo')">Indigo / Coral (default)</button><button class="btn" onclick="setTheme('light')">Light</button><button class="btn" onclick="setTheme('dark')">Dark</button></div></div>
-  <div class="card"><h3>Providers (optional — external AI)</h3>
-    <p class="muted small">Keys are stored only in this browser (localStorage). They are never sent anywhere by this app except when you press Test Connection, which tries the provider's own endpoint. A saved key shows “Key saved — not verified” until a test passes.</p>
+  <div class="card"><h3>Built-in engine only</h3>
+    <p class="muted small">Stories, pictures, music and video are all made by the built-in engine, right here in your browser. There is nothing to connect and no API key to paste.</p>
     <div id="providerList"></div>
   </div>
   <div class="card"><h3>Your data</h3><div class="row"><button class="btn" onclick="exportAllData()">⬇ Export all data (.json)</button><button class="btn danger" onclick="clearAllData()">Delete all local data</button></div></div>
@@ -416,6 +415,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="auth.js?v=26"></script>
-<script src="app.js?v=29"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>
