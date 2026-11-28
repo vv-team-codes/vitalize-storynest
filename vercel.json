@@ -1,1 +1,1 @@
-{"$schema":"https://openapi.vercel.sh/vercel.json","functions":{"api/generate-image-eleven.js":{"memory":1024},"api/generate-video-eleven.js":{"memory":1024},"api/narrate.js":{"memory":1024}}}
+{"$schema":"https://openapi.vercel.sh/vercel.json","functions":{"api/generate-image-eleven.js":{"memory":1024},"api/generate-story-openai.js":{"memory":1024},"api/generate-video-eleven.js":{"memory":1024},"api/narrate.js":{"memory":1024}}}
