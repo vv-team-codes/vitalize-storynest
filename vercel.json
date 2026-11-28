@@ -12,6 +12,9 @@
     },
     "api/describe-image.js": {
       "memory": 1024
+    },
+    "api/narrate.js": {
+      "memory": 1024
     }
   }
 }
