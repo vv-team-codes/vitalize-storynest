@@ -16,9 +16,9 @@
  * browser's built-in voice.
  *
  * Model: the provider's fast speech model (half character cost).
- * Voice IDs are premade voices available on the provider's free
- * plan; if one is retired, update the map here — never in client
- * code.
+ * Voice IDs are premade voices, verified live from the provider's
+ * voice list on 28 Nov 2026; if one is retired, update the map
+ * below — never in client code.
  *
  * Limits (the free plan is 10,000 credits a month, not unlimited):
  *  - the fast model costs ~0.5 credits per character, so the proxy
@@ -44,13 +44,18 @@ const MODEL_ID = 'eleven_flash_v2_5';
 const OUTPUT_FORMAT = 'mp3_44100_128';
 const KEY_ENV = 'ELEVENLABS_API_KEY';
 
-// Role keys the site sends -> premade voice IDs (free plan).
+// Role keys the site sends -> premade voice IDs, verified live from
+// the provider's voice list on 28 Nov 2026. If one is retired,
+// update the map here — never in client code.
 const VOICES = {
-  narrator: '21m00Tcm4TlvDq8ikWAM', // warm, calm narrator
-  luna: 'EXAVITQu4vr4xnSDxMaL', // soft, gentle — Luna
-  max: 'ErXwobaYiN019PkySvjV', // young, friendly — Max
-  pip: 'MF3mGyEYCl7XYWbV9V6O', // young, energetic — Pip
+  narrator: 'JBFqnCBsd6RMkjVDRZzb', // George — warm, captivating storyteller
+  luna: 'cgSgspJ2msm6clMCkdW9', // Jessica — playful, bright, warm
+  max: 'IKne3meq5aSn9XLyUdCD', // Charlie — deep, confident, energetic
+  pip: 'yj30vwTGJxSHezdAGsv9', // Jessa — easygoing and effortless
 };
+// Alternate (not wired): Bella 'hpp4J3VqNfWAUOO0d1Us' — professional,
+// bright, warm. Future (not wired): Tamil voices Ashwin
+// 'OP382u5y4MvFmE1mReFV' and Vanishree 'OUBMjq0LvBjb07bhwD3H'.
 
 const MAX_TEXT_CHARS = 4000;
 const MONTHLY_CHAR_LIMIT = 18000; // ~9,000 credits at 0.5/char
